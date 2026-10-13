@@ -1,0 +1,68 @@
+{
+  "model": "FixItAI scratch Transformer dual encoder",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "pretrained_weights": false,
+  "weak_supervision": "highest answer vote score among answers sharing ParentId; weak relevance label, not accepted-answer ground truth",
+  "validation": {
+    "epoch": 4,
+    "train_loss": 0.2711003791230178,
+    "queries": 2281,
+    "candidate_answers": 22814,
+    "recall_at_1": 0.02981148660182953,
+    "recall_at_5": 0.08066637814044952,
+    "mrr": 0.06264816224575043
+  },
+  "all_epochs": [
+    {
+      "epoch": 1,
+      "train_loss": 1.61395784922159,
+      "queries": 2281,
+      "candidate_answers": 22814,
+      "recall_at_1": 0.016659360378980637,
+      "recall_at_5": 0.05743095278739929,
+      "mrr": 0.042499251663684845
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6839915443261154,
+      "queries": 2281,
+      "candidate_answers": 22814,
+      "recall_at_1": 0.023235423490405083,
+      "recall_at_5": 0.07496712356805801,
+      "mrr": 0.054681114852428436
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.40201658724762923,
+      "queries": 2281,
+      "candidate_answers": 22814,
+      "recall_at_1": 0.02411223202943802,
+      "recall_at_5": 0.0758439302444458,
+      "mrr": 0.05735534802079201
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.2711003791230178,
+      "queries": 2281,
+      "candidate_answers": 22814,
+      "recall_at_1": 0.02981148660182953,
+      "recall_at_5": 0.08066637814044952,
+      "mrr": 0.06264816224575043
+    }
+  ],
+  "data_quality": {
+    "source_zip": "archive.zip",
+    "question_candidates": 594057,
+    "sampled_questions": 30000,
+    "matched_pairs": 22814,
+    "question_min_score": 1,
+    "answer_min_score": 1,
+    "label_method": "highest answer vote score among answers sharing ParentId; weak relevance label, not accepted-answer ground truth",
+    "training_pairs": 20533,
+    "validation_pairs": 2281,
+    "sampled_answer_ids": 22822,
+    "answer_selection_is_weak_supervision": true
+  },
+  "metrics_caution": "Validation retrieves the highest-voted answer selected by a weak heuristic; it does not measure verified technical correctness."
+}

@@ -1,0 +1,13 @@
+{
+  "architecture": {
+    "vocab_size": 12000,
+    "max_length": 128,
+    "hidden_size": 128,
+    "layers": 2,
+    "heads": 4,
+    "dropout": 0.1,
+    "pad_id": 0
+  },
+  "model_type": "ScratchEncoder",
+  "pretrained": false
+}
