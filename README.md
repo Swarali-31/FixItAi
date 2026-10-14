@@ -1,60 +1,65 @@
 # FixItAI
 
-FixItAI retrieves technical answers for troubleshooting questions. It combines technical-aware query parsing, TF-IDF, BM25, and a small Transformer dual encoder trained **from random initialization on CUDA**. It does not load Sentence-BERT or any other pretrained weights, call an LLM, or fall back to CPU for model training or inference.
+FixItAI is a local technical troubleshooting website. Its frontend is built with React and Vite; a FastAPI service connects it to the locally trained Transformer and indexed technical passages.
 
-## Dataset audit
+## Start the website in development
 
-The supplied `archive.zip` contains `Questions.csv`, `Answers.csv`, and `Tags.csv` from Stack Overflow. The columns include question IDs, titles, bodies, scores, answer parent IDs, answer bodies/scores, and question tags. This is technically relevant community Q&A for software troubleshooting and is a workable retrieval corpus.
+Open two PowerShell terminals.
 
-It does **not** contain an `AcceptedAnswerId` field. FixItAI therefore uses the highest-voted answer associated with each question as a weak positive training pair. Votes are community feedback, not verified correctness; old or high-scoring answers can be obsolete or wrong. The model's held-out retrieval metrics are agreement with this noisy pairing setup, not proof of technical correctness. Keep that qualification in academic reporting.
+**Terminal 1 - Python API**
 
-The training script reads the CSV files directly from the ZIP, samples a bounded subset of questions with positive question scores, matches answers via `ParentId`, and attaches tags. It preserves source post IDs, links, vote scores, and available user IDs for traceability. Stack Overflow contributions are under versions of CC BY-SA; review and follow attribution/share-alike conditions before redistribution. [Stack Overflow licensing](https://stackoverflow.com/help/licensing).
+```powershell
+cd D:\NLP_PROJECT
+.\.venv\Scripts\python.exe -m uvicorn api:app --host 127.0.0.1 --port 8000
+```
 
-The 1.19 GB source archive is excluded from this GitHub repository. To train from scratch, place your copy at `data\archive.zip`; the script streams its CSVs without extracting the archive. The committed trained checkpoint and index let you run the app without retraining.
+**Terminal 2 - React frontend**
 
-## Train from scratch on CUDA (required)
+```powershell
+cd D:\NLP_PROJECT\frontend
+npm.cmd install
+npm.cmd run dev
+```
 
-The CUDA model uses a byte-level BPE tokenizer trained on the training split and a randomly initialized 2-layer, 128-hidden Transformer encoder. It learns question-to-answer retrieval with symmetric in-batch contrastive loss. Validation uses held-out question/answer pairs and reports Recall@1, Recall@5, and MRR. The answer selection labels are weak, as described above.
+Open `http://127.0.0.1:5173`. The React homepage has navigation links and hoverable cards for troubleshooting, the knowledge base, evaluation, search history, and project information. The home page and non-search sections do not need to initialize CUDA. The first search loads the scratch-trained model and requires the NVIDIA CUDA runtime.
 
-On this workstation, from PowerShell:
+## Build a single local website
+
+```powershell
+cd D:\NLP_PROJECT\frontend
+npm.cmd install
+npm.cmd run build
+cd D:\NLP_PROJECT
+.\.venv\Scripts\python.exe -m uvicorn api:app --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000`. FastAPI serves the compiled React website and its API from the same local process.
+
+## Train the Transformer from scratch
+
+The supplied Stack Overflow archive belongs at `data\archive.zip`. The 1.19 GB archive is excluded from GitHub. Training streams its CSV files without extracting the full archive.
 
 ```powershell
 cd D:\NLP_PROJECT
 .\.venv\Scripts\python.exe train_fixitai.py
 ```
 
-The default is 30,000 sampled questions, 4 epochs, and batch size 16 to fit the RTX 3050's 4 GB VRAM. Use `--max-questions`, `--epochs`, or `--batch-size` to adjust. Training **stops with an error** if CUDA is unavailable; it never quietly trains on CPU. No pretrained model is downloaded.
+Training requires CUDA and stops if CUDA is unavailable; it does not fall back to CPU or load pretrained weights. The model is a randomly initialized two-layer, 128-hidden Transformer trained with contrastive question-to-answer retrieval. The saved checkpoint and index are in `models\fixitai`.
 
-Training creates `models/fixitai/model.pt`, `tokenizer.json`, `model_config.json`, `training_metadata.json`, `training_history.json`, `indexed_chunks.json`, and `passage_embeddings.npz`. Check `training_metadata.json` for the actual device, sampled/matched counts, weak-label definition, and validation results.
+The dataset has no accepted-answer column. Training uses the highest-voted associated answer as a weak relevance label. Votes do not verify answer correctness or freshness. Recorded held-out results are Recall@1 3.0%, Recall@5 8.1%, and MRR 0.063 against this noisy label setup.
 
-### Recorded run on the supplied archive
+## Dataset
 
-On the RTX 3050 Laptop GPU, the run sampled 30,000 of 594,057 positive-score questions, matched 22,814 positive-score answers, trained on 20,533 pairs, and validated on 2,281 queries against all 22,814 candidate answers. The best epoch (4) reported Recall@1 **3.0%**, Recall@5 **8.1%**, and MRR **0.063**. These are modest retrieval results against the highest-voted-answer heuristic, not an expert correctness score. The evaluation dashboard and `models/fixitai/training_metadata.json` contain the complete epoch history.
+The archive contains `Questions.csv` (1,264,216 rows, 7 columns), `Answers.csv` (2,014,516 rows, 6 columns), and `Tags.csv` (3,750,994 rows, 2 columns). It is about 1.19 GB compressed and 3.60 GB uncompressed.
 
-## Run the app
+Stack Overflow posts are licensed under CC BY-SA terms. The index retains post links and attribution; review those terms before redistributing the derived dataset.
 
-Train first, then:
+## Project structure
 
-```powershell
-cd D:\NLP_PROJECT
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-The app also refuses startup when CUDA or the trained checkpoint/index is missing. Dense query encoding runs on CUDA only. TF-IDF and BM25 are lexical baselines implemented by scikit-learn/rank-bm25; they run on CPU. The interface shows retrieved source passages, Stack Overflow post links/attribution, component scores, and a low-evidence message.
-
-## Verify CUDA
-
-```powershell
-.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CUDA unavailable')"
-```
-
-This environment should report CUDA available and the RTX 3050. Install dependencies if needed with `python -m pip install -r requirements.txt`, then install a matching CUDA PyTorch wheel from the [official selector](https://pytorch.org/get-started/locally/). `torch` in `requirements.txt` alone may install a CPU build depending on the index, so always verify the command above.
-
-## Main project files
-
-- `src/scratch_encoder.py`: random-init Transformer, CUDA-only loading and embeddings.
-- `train_fixitai.py`: Stack Overflow ZIP audit, weak-pair creation, tokenizer/model training, held-out retrieval evaluation, and CUDA indexing.
-- `src/fixitai.py`: document ingestion, query analysis, TF-IDF/BM25/dense hybrid ranking.
-- `app.py`: Streamlit troubleshooting interface, document explorer, evaluation, and feedback.
-- `data/knowledge_base/`: locally authored starter notes, included alongside the dataset passages.
-
+- `frontend/` - React and Vite website
+- `api.py` - local FastAPI routes for search, uploads, evaluation, history, and feedback
+- `src/scratch_encoder.py` - randomly initialized Transformer; CUDA-only model loading and embeddings
+- `train_fixitai.py` - data matching, tokenizer training, CUDA model training, and retrieval evaluation
+- `src/fixitai.py` - document ingestion and hybrid retrieval
+- `data/knowledge_base/` - starter technical notes
+- `models/fixitai/` - trained checkpoint, tokenizer, and retrieval index
