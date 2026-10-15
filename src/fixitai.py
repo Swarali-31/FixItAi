@@ -72,14 +72,15 @@ class HybridRetriever:
         self.encoder=model;self.tokenizer=tokenizer;self.device=device;self.embeddings=embeddings
 
     def build_embeddings(self, device: str|None=None):
-        from .scratch_encoder import load_scratch_model,encode_texts,require_cuda
+        from .scratch_encoder import require_cuda
+        from .bert_encoder import encode_fixitai_texts,load_fixitai_model
         import numpy as np
         cuda=require_cuda()
         if device and str(device).casefold() not in {"cuda","cuda:0"}:raise RuntimeError("FixItAI embeddings are CUDA-only.")
-        model,tokenizer,cuda=load_scratch_model(self.model_dir,cuda)
+        model,tokenizer,cuda=load_fixitai_model(self.model_dir,cuda)
         self.set_scratch_model(model,tokenizer,cuda)
         texts=[c["title"]+". "+" ".join(c.get("technologies",[]))+". "+c["text"] for c in self.chunks]
-        self.embeddings=encode_texts(model,tokenizer,texts,cuda)
+        self.embeddings=encode_fixitai_texts(model,tokenizer,texts,cuda)
         return str(cuda)
 
     def search(self, query: str, top_k=5, technology: str|None=None, mode="Hybrid"):
@@ -95,10 +96,10 @@ class HybridRetriever:
                 if bm.max()>0:bm/=bm.max()
         if self.embeddings is not None:
             if self.encoder is None:
-                from .scratch_encoder import load_scratch_model
-                self.encoder,self.tokenizer,self.device=load_scratch_model(self.model_dir)
-            from .scratch_encoder import encode_texts
-            query_vector=encode_texts(self.encoder,self.tokenizer,[q["normalized"]],self.device,batch_size=1)[0]
+                from .bert_encoder import load_fixitai_model
+                self.encoder,self.tokenizer,self.device=load_fixitai_model(self.model_dir)
+            from .bert_encoder import encode_fixitai_texts
+            query_vector=encode_fixitai_texts(self.encoder,self.tokenizer,[q["normalized"]],self.device,batch_size=1)[0]
             sem=query_vector @ self.embeddings.T
             sem=np.maximum(sem,0)
         use_sem=self.embeddings is not None

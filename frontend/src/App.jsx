@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
   ChevronDown, CircleHelp, Cpu, Database, FileText, Gauge, History,
@@ -19,6 +19,7 @@ const examples = [
   "Docker says the port is already allocated",
   "Python raises ModuleNotFoundError after install",
   "MySQL connection timeout from a Java app",
+  "I am not receiving Microsoft Teams notifications",
 ];
 const technologies = ["All technologies", "Java", "Python", "SQL", "MySQL", "Docker", "Linux", "Windows", "Git", "HTTP", "DNS", "Kubernetes"];
 
@@ -83,11 +84,13 @@ function App() {
     if (page === "knowledge") loadLibrary("");
   }, [page]);
 
-  async function loadLibrary(filter = libraryFilter) {
+  async function loadLibrary(filter = libraryFilter, append = false) {
     setLibraryLoading(true);
     try {
-      const suffix = filter ? `?search_text=${encodeURIComponent(filter)}&limit=60` : "?limit=60";
-      setLibrary(await request(`/knowledge-base${suffix}`));
+      const offset = append ? library.items.length : 0;
+      const params = new URLSearchParams({ search_text: filter, offset: String(offset), limit: "60" });
+      const data = await request("/knowledge-base?" + params.toString());
+      setLibrary((current) => append ? { ...data, items: [...current.items, ...data.items] } : data);
       setPageError("");
     } catch (error) {
       setPageError(error.message);
@@ -220,12 +223,12 @@ function App() {
 
         {page === "ask" && (
           <>
-            <PageHeading eyebrow="TECHNICAL TROUBLESHOOTING" title="Ask FixItAI" copy="Describe the problem. FixItAI will search technical sources and show you why each one matched." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
+            <PageHeading eyebrow="TECHNICAL TROUBLESHOOTING" title="Ask FixItAI" copy="Ask a general tech question or describe a problem. FixItAI finds relevant indexed guidance and shows its sources." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
             <div className="search-layout">
               <section className="search-panel">
                 <form onSubmit={runSearch}>
-                  <label className="field-label" htmlFor="question">What are you trying to fix?</label>
-                  <textarea id="question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Include the exact error, technology, version, and what you have already tried..." rows={5} />
+                  <label className="field-label" htmlFor="question">What tech question can I help with?</label>
+                  <textarea id="question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask a question, for example: “Why am I not receiving Teams notifications?” Add your device or app version for more specific guidance." rows={5} />
                   <div className="example-row"><span>Try:</span>{examples.map((example) => <button type="button" key={example} onClick={() => setQuery(example)}>{example}</button>)}</div>
                   <div className="search-options">
                     <label>Technology<select value={technology} onChange={(event) => setTechnology(event.target.value)}>{technologies.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -237,9 +240,10 @@ function App() {
               <aside className="search-aside"><div className="aside-icon"><CircleHelp size={21} /></div><h3>Get better matches</h3><ul><li>Paste the complete error message.</li><li>Name the language, framework, or service.</li><li>Include what you already tried.</li></ul><div className="aside-note"><ShieldCheck size={16} /> Results include their source and attribution.</div></aside>
             </div>
             {searchError && <div className="notice error"><X size={17} />{searchError}</div>}
-            {searching && <div className="loading-row"><LoaderCircle className="spin" /> Searching the CUDA model and technical index...</div>}
+            {searching && <div className="loading-row"><LoaderCircle className="spin" /> Searching the CUDA model and technical guides...</div>}
             {results.length > 0 && <section className="results-section"><div className="section-heading"><div><div className="eyebrow">MATCHED EVIDENCE</div><h2>Recommended sources</h2><p>{results.length} passages matched your question.</p></div>{analysis && <details className="analysis"><summary>Query signals <ChevronDown size={14} /></summary><pre>{JSON.stringify(analysis, null, 2)}</pre></details>}</div>
-              {results[0].score < 0.2 && <div className="notice warning">The top match is weak. Treat these results as leads and verify important details against current official documentation.</div>}
+              <article className="answer-card"><div className="eyebrow">BEST MATCHING GUIDANCE</div><h3>{results[0].title}</h3><p>{results[0].text}</p><div className="answer-source">From {results[0].source}{results[0].url && <> · <a href={results[0].url} target="_blank" rel="noreferrer">Open source <ArrowUpRight size={13} /></a></>}</div></article>
+              {results[0].score < 0.2 && <div className="notice warning">The match is weak. These suggestions may not fit your question; check the linked source and share more details to narrow it down.</div>}
               <div className="result-list">{results.map((result, index) => <article className="result-card" key={result.chunk_id}>
                 <div className="result-card-head"><span className="result-rank">{String(index + 1).padStart(2, "0")}</span><div><div className="result-source">{result.source}</div><h3>{result.title}</h3></div><span className="score-pill">{result.score.toFixed(3)} match</span></div>
                 <p className="result-text">{result.text}</p>
@@ -259,8 +263,9 @@ function App() {
             {pageError && <div className="notice error"><X size={17} />{pageError}</div>}
             <div className="library-toolbar"><div className="library-search"><Search size={18} /><input value={libraryFilter} onChange={(event) => setLibraryFilter(event.target.value)} onKeyDown={(event) => event.key === "Enter" && loadLibrary(libraryFilter)} placeholder="Filter by title, source, technology, or passage..." /><button onClick={() => loadLibrary(libraryFilter)}>Search</button></div>
               <label className="button button-primary upload-button"><Upload size={17} />{uploading ? "Indexing..." : "Add documents"}<input type="file" multiple accept=".txt,.md,.markdown,.pdf,.csv,.json" onChange={(event) => uploadFiles(event.target.files)} disabled={uploading} /></label></div>
-            <div className="library-summary"><span><Database size={16} /> {library.total.toLocaleString()} passages</span><span>Showing {library.items.length} at a time</span><span>TXT, Markdown, PDF, CSV, JSON</span></div>
+            <div className="library-summary"><span><Database size={16} /> {library.total.toLocaleString()} passages</span><span>Showing {library.items.length.toLocaleString()} of {library.total.toLocaleString()}</span><span>TXT, Markdown, PDF, CSV, JSON</span></div>
             {libraryLoading ? <div className="loading-row"><LoaderCircle className="spin" /> Loading the library...</div> : <div className="library-list">{library.items.map((item) => <article key={item.chunk_id} className="library-item"><div className="library-item-icon"><FileText size={18} /></div><div className="library-item-content"><div className="result-source">{item.category || item.source}</div><h3>{item.title}</h3><p>{item.text}</p><div className="tag-row">{(item.technologies || []).slice(0, 5).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div></div>{item.url && <a className="icon-link" href={item.url} target="_blank" rel="noreferrer" aria-label="Open source"><ArrowUpRight size={17} /></a>}</article>)}</div>}
+            {!libraryLoading && library.items.length < library.total && <div className="library-more"><button className="button button-light" onClick={() => loadLibrary(libraryFilter, true)}>Load more passages <ArrowDownRight size={15} /></button></div>}
           </>
         )}
 
@@ -280,7 +285,7 @@ function App() {
           <>
             <PageHeading eyebrow="RECENT ACTIVITY" title="Search history" copy="Review your recent questions and mark whether the retrieved evidence was useful." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
             {pageError && <div className="notice error">{pageError}</div>}{notice && <div className="notice success"><Check size={16} />{notice}</div>}
-            {history.length ? <div className="history-list">{history.map((item, index) => <article className="history-item" key={`${item.query}-${index}`}><div className="history-icon"><MessageSquareText size={18} /></div><div className="history-body"><h3>{item.query}</h3><p>{item.result_ids?.length || 0} source passages · {item.feedback || "Feedback not given"}</p></div><div className="history-feedback"><button className={item.feedback === "Useful" ? "feedback chosen" : "feedback"} onClick={() => saveFeedback(index, "Useful")}><Check size={15} /> Useful</button><button className={item.feedback === "Not useful" ? "feedback chosen" : "feedback"} onClick={() => saveFeedback(index, "Not useful")}><X size={15} /> Not useful</button></div></article>)}</div> : !pageError && <div className="empty-state"><History size={28} /><h3>No searches yet</h3><p>Your questions will show here after you use Ask FixItAI.</p><button className="button button-primary" onClick={() => setPage("ask")}>Ask a question <ArrowRight size={16} /></button></div>}
+            {history.length ? <div className="history-list">{history.map((item, index) => <article className="history-item" key={`${item.query}-${index}`}><div className="history-icon"><MessageSquareText size={18} /></div><div className="history-body"><h3>{item.query}</h3><p>{item.result_ids?.length || 0} source passages Â· {item.feedback || "Feedback not given"}</p></div><div className="history-feedback"><button className={item.feedback === "Useful" ? "feedback chosen" : "feedback"} onClick={() => saveFeedback(index, "Useful")}><Check size={15} /> Useful</button><button className={item.feedback === "Not useful" ? "feedback chosen" : "feedback"} onClick={() => saveFeedback(index, "Not useful")}><X size={15} /> Not useful</button></div></article>)}</div> : !pageError && <div className="empty-state"><History size={28} /><h3>No searches yet</h3><p>Your questions will show here after you use Ask FixItAI.</p><button className="button button-primary" onClick={() => setPage("ask")}>Ask a question <ArrowRight size={16} /></button></div>}
             <p className="disclaimer">History is stored locally by default. Configure FIXITAI_MONGODB_URI to save it in MongoDB.</p>
           </>
         )}
@@ -315,3 +320,6 @@ function TrainingChart({ rows }) {
 }
 
 export default App;
+
+
+

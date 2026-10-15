@@ -22,3 +22,16 @@ data/query_history.json
 
 frontend/node_modules/
 frontend/dist/
+
+# Keep the completed from-scratch BERT model and its reproducibility metadata.
+!models/fixitai_bert_200k/
+models/fixitai_bert_200k/*
+!models/fixitai_bert_200k/tokenizer.json
+!models/fixitai_bert_200k/training_history.json
+!models/fixitai_bert_200k/training_metadata.json
+!models/fixitai_bert_200k/training_status.json
+!models/fixitai_bert_200k/bert_encoder/
+models/fixitai_bert_200k/bert_encoder/*
+!models/fixitai_bert_200k/bert_encoder/config.json
+!models/fixitai_bert_200k/bert_encoder/model.safetensors
+outputs/*.log
