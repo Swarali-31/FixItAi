@@ -1,4 +1,4 @@
-﻿"""Local FastAPI service for the FixItAI React application."""
+"""Local FastAPI service for the FixItAI React application."""
 from __future__ import annotations
 
 import json
@@ -44,6 +44,24 @@ class SearchRequest(BaseModel):
 class FeedbackRequest(BaseModel):
     index_from_newest: int = Field(ge=0)
     feedback: str
+
+
+class NLPAnalyzeRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=5000)
+
+
+class SummarizeRequest(BaseModel):
+    query: str
+    passage: str
+    title: str = ""
+
+
+class TranslateRequest(BaseModel):
+    text: str = Field(default="", max_length=5000)
+    query: str = ""
+    root_cause: str = ""
+    action_steps: list[str] = []
+    code_snippet: str | None = None
 
 
 def read_json(path: Path, default):
@@ -143,14 +161,70 @@ def search(payload: SearchRequest):
         raise HTTPException(status_code=422, detail="Enter a technical question to search.")
     try:
         retriever, _, device = get_runtime()
-        from src.fixitai import analyze_query
+        from src.nlp_pipeline import get_nlp_pipeline
+        from src.summarizer import get_summarizer
+
+        # 1. Full NLP pipeline linguistic analysis (Unit 1, 2, 4)
+        nlp_analysis = get_nlp_pipeline().analyze_linguistics(payload.query)
+
+        # 2. Information Retrieval search across vectorization schemes
         results = retriever.search(payload.query, payload.top_k, payload.technology, payload.mode)
+
+        # 3. Pretrained Transformer Text Summarization on top candidate (Unit 5 / Lab 6)
+        ai_solution = None
         if results:
-            from src.persistence import append_history
-            append_history(HISTORY, {"query": payload.query, "result_ids": [item["chunk_id"] for item in results], "feedback": None})
-        return {"results": results, "analysis": analyze_query(payload.query), "device": device}
+            try:
+                from src.persistence import append_history
+                append_history(HISTORY, {"query": payload.query, "result_ids": [item["chunk_id"] for item in results], "feedback": None})
+            except Exception:
+                pass
+            top_match = results[0]
+            ai_solution = get_summarizer().summarize(payload.query, top_match.get("text", ""), top_match.get("title", ""))
+
+        return {
+            "results": results,
+            "analysis": nlp_analysis,
+            "ai_solution": ai_solution,
+            "device": device
+        }
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"GPU search could not start: {exc}") from exc
+
+
+@app.post("/api/nlp-analyze")
+def nlp_analyze(payload: NLPAnalyzeRequest):
+    """Endpoint for interactive NLP linguistic analysis (Unit 1, 2, 4)."""
+    from src.nlp_pipeline import get_nlp_pipeline
+    return get_nlp_pipeline().analyze_linguistics(payload.text)
+
+
+@app.post("/api/summarize")
+def summarize_solution(payload: SummarizeRequest):
+    """Endpoint for pre-trained BERT text summarization (Unit 5 / Lab 6)."""
+    from src.summarizer import get_summarizer
+    return get_summarizer().summarize(payload.query, payload.passage, payload.title)
+
+
+@app.post("/api/translate")
+def translate_text(payload: TranslateRequest):
+    """Endpoint for Seq2Seq English-to-Hindi Machine Translation (Unit 5 / Lab 5)."""
+    from src.translator import get_translator
+    translator = get_translator()
+    if payload.root_cause or payload.action_steps or payload.query:
+        return translator.explain_diagnostic_in_hindi(
+            query=payload.query,
+            root_cause=payload.root_cause or payload.text,
+            action_steps=payload.action_steps,
+            code_snippet=payload.code_snippet
+        )
+    return translator.translate(payload.text)
+
+
+@app.get("/api/benchmarks")
+def get_benchmarks():
+    """Endpoint for comprehensive IR vectorization evaluation table (Unit 2, 3, 5)."""
+    from src.vector_engine import get_curated_benchmarks
+    return {"benchmarks": get_curated_benchmarks()}
 
 
 @lru_cache(maxsize=1)
@@ -228,17 +302,18 @@ def evaluation():
 
 @app.get("/api/history")
 def history():
-    return {"items": list(reversed(read_json(HISTORY, [])))}
+    from src.persistence import load_history
+    return {"items": list(reversed(load_history(HISTORY)))}
 
 
 @app.post("/api/feedback")
 def feedback(payload: FeedbackRequest):
     if payload.feedback not in {"Useful", "Not useful"}:
         raise HTTPException(status_code=400, detail="Feedback must be Useful or Not useful.")
-    rows = read_json(HISTORY, [])
+    from src.persistence import load_history, save_feedback
+    rows = load_history(HISTORY)
     if payload.index_from_newest >= len(rows):
         raise HTTPException(status_code=404, detail="That search is no longer in history.")
-    from src.persistence import save_feedback
     save_feedback(HISTORY, payload.index_from_newest, payload.feedback)
     return {"ok": True}
 

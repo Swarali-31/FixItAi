@@ -1,325 +1,948 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
-  ChevronDown, CircleHelp, Cpu, Database, FileText, Gauge, History,
-  Info, LoaderCircle, MessageSquareText, Search, ShieldCheck, Sparkles,
-  Upload, X,
+  ArrowDownRight, ArrowUpRight, BookOpen, Check,
+  CircleHelp, Cpu, Database, FileText, History,
+  LoaderCircle, MessageSquareText, Search, Sparkles,
+  Upload, X, Terminal, Languages, Layers, Copy, CheckCheck, AlertTriangle, Zap, Play
 } from "lucide-react";
 
-const pages = [
-  { id: "ask", label: "Ask FixItAI", icon: Search, description: "Troubleshoot a technical issue" },
-  { id: "knowledge", label: "Knowledge base", icon: BookOpen, description: "Explore and add technical notes" },
-  { id: "evaluation", label: "Model evaluation", icon: Gauge, description: "See training and retrieval results" },
-  { id: "history", label: "Search history", icon: History, description: "Review searches and leave feedback" },
-  { id: "about", label: "About the project", icon: Info, description: "Learn how FixItAI works" },
+const navigationItems = [
+  { id: "troubleshoot", label: "Troubleshoot", icon: Search },
+  { id: "analyzer", label: "Error Analyzer", icon: Layers },
+  { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
+  { id: "history", label: "History", icon: History },
 ];
 
-const examples = [
-  "Java NullPointerException in a service method",
-  "Docker says the port is already allocated",
-  "Python raises ModuleNotFoundError after install",
-  "MySQL connection timeout from a Java app",
-  "I am not receiving Microsoft Teams notifications",
+const presetExamples = [
+  "Python raises ModuleNotFoundError: No module named 'fastapi'",
+  "Java NullPointerException in service controller",
+  "Docker bind address already in use on port 8080",
+  "MySQL connection timeout from client application",
 ];
-const technologies = ["All technologies", "Java", "Python", "SQL", "MySQL", "Docker", "Linux", "Windows", "Git", "HTTP", "DNS", "Kubernetes"];
 
-async function request(path, options = {}) {
-  const response = await fetch(`/api${path}`, options);
+const technologyFilters = [
+  "All technologies", "Python", "Java", "Docker", "JavaScript", "SQL",
+  "MySQL", "Linux", "Windows", "Git", "HTTP", "Kubernetes"
+];
+
+async function apiRequest(endpoint, options = {}) {
+  const response = await fetch(`/api${endpoint}`, options);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.detail || `Request failed (${response.status})`);
   return data;
 }
 
-function PageHeading({ eyebrow, title, copy, action }) {
+function PageHeader({ eyebrow, title, description, actions }) {
   return (
-    <div className="page-heading-row">
+    <div className="page-header">
       <div>
-        <div className="eyebrow">{eyebrow}</div>
+        {eyebrow && <span className="header-eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
-        {copy && <p>{copy}</p>}
+        {description && <p>{description}</p>}
       </div>
-      {action}
+      {actions && <div className="header-actions">{actions}</div>}
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, detail }) {
+function MetricCard({ icon: Icon, label, value, detail }) {
   return (
-    <div className="stat-card">
-      <div className="stat-icon"><Icon size={18} /></div>
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-      {detail && <div className="stat-detail">{detail}</div>}
+    <div className="metric-card">
+      <div className="metric-icon"><Icon size={18} /></div>
+      <div className="metric-content">
+        <span className="metric-label">{label}</span>
+        <div className="metric-value">{value}</div>
+        {detail && <span className="metric-detail">{detail}</span>}
+      </div>
     </div>
   );
 }
 
 function App() {
-  const [page, setPage] = useState("home");
-  const [health, setHealth] = useState(null);
-  const [query, setQuery] = useState("");
-  const [technology, setTechnology] = useState("All technologies");
-  const [mode, setMode] = useState("Hybrid");
-  const [results, setResults] = useState([]);
-  const [analysis, setAnalysis] = useState(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState("");
-  const [library, setLibrary] = useState({ items: [], total: 0 });
-  const [libraryFilter, setLibraryFilter] = useState("");
-  const [libraryLoading, setLibraryLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [evaluation, setEvaluation] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [pageError, setPageError] = useState("");
+  const [activeTab, setActiveTab] = useState("troubleshoot");
+  const [systemHealth, setSystemHealth] = useState(null);
+
+  // Troubleshoot State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTech, setSelectedTech] = useState("All technologies");
+  const [retrievalMode, setRetrievalMode] = useState("Hybrid");
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [linguisticAnalysis, setLinguisticAnalysis] = useState(null);
+  const [diagnosticSolution, setDiagnosticSolution] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchErrorMsg, setSearchErrorMsg] = useState("");
+  const [copiedCodeSuccess, setCopiedCodeSuccess] = useState(false);
+
+  // Translation State
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [hindiSolution, setHindiSolution] = useState(null);
+  const [showHindiView, setShowHindiView] = useState(false);
+
+  // Linguistic Analyzer State
+  const [analyzerInput, setAnalyzerInput] = useState("Python raises ModuleNotFoundError: No module named 'fastapi' when executing main.py");
+  const [analyzerOutput, setAnalyzerOutput] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Knowledge Base State
+  const [libraryData, setLibraryData] = useState({ items: [], total: 0 });
+  const [librarySearchTerm, setLibrarySearchTerm] = useState("");
+  const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // History State
+  const [searchHistoryList, setSearchHistoryList] = useState([]);
+  const [feedbackNotice, setFeedbackNotice] = useState("");
+  const [generalError, setGeneralError] = useState("");
 
   useEffect(() => {
-    request("/health").then(setHealth).catch(() => setHealth({ status: "offline" }));
+    apiRequest("/health")
+      .then(setSystemHealth)
+      .catch(() => setSystemHealth({ status: "offline" }));
   }, []);
 
   useEffect(() => {
-    setPageError("");
-    if (page === "evaluation") request("/evaluation").then(setEvaluation).catch((error) => setPageError(error.message));
-    if (page === "history") request("/history").then((data) => setHistory(data.items || [])).catch((error) => setPageError(error.message));
-    if (page === "knowledge") loadLibrary("");
-  }, [page]);
+    setGeneralError("");
+    if (activeTab === "history") {
+      apiRequest("/history")
+        .then((data) => setSearchHistoryList(data.items || []))
+        .catch((err) => setGeneralError(err.message));
+    }
+    if (activeTab === "knowledge") {
+      fetchLibraryPassages("");
+    }
+    if (activeTab === "analyzer" && !analyzerOutput) {
+      executeLinguisticAnalysis(analyzerInput);
+    }
+  }, [activeTab]);
 
-  async function loadLibrary(filter = libraryFilter, append = false) {
-    setLibraryLoading(true);
+  async function fetchLibraryPassages(filter = librarySearchTerm, append = false) {
+    setIsLibraryLoading(true);
     try {
-      const offset = append ? library.items.length : 0;
-      const params = new URLSearchParams({ search_text: filter, offset: String(offset), limit: "60" });
-      const data = await request("/knowledge-base?" + params.toString());
-      setLibrary((current) => append ? { ...data, items: [...current.items, ...data.items] } : data);
-      setPageError("");
-    } catch (error) {
-      setPageError(error.message);
+      const offset = append ? libraryData.items.length : 0;
+      const params = new URLSearchParams({ search_text: filter, offset: String(offset), limit: "50" });
+      const data = await apiRequest(`/knowledge-base?${params.toString()}`);
+      setLibraryData((prev) => append ? { ...data, items: [...prev.items, ...data.items] } : data);
+    } catch (err) {
+      setGeneralError(err.message);
     } finally {
-      setLibraryLoading(false);
+      setIsLibraryLoading(false);
     }
   }
 
-  async function runSearch(event) {
-    event?.preventDefault();
-    if (!query.trim()) return;
-    setSearching(true);
-    setSearchError("");
-    setResults([]);
+  async function executeTroubleshoot(customQuery) {
+    const q = (typeof customQuery === "string" ? customQuery : searchQuery).trim();
+    if (!q) return;
+
+    if (typeof customQuery === "string") {
+      setSearchQuery(customQuery);
+    }
+
+    setIsSearching(true);
+    setSearchErrorMsg("");
+    setHasSearched(true);
+    setSearchResults([]);
+    setDiagnosticSolution(null);
+    setHindiSolution(null);
+    setShowHindiView(false);
+
     try {
-      const data = await request("/search", {
+      const data = await apiRequest("/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query,
-          technology: technology === "All technologies" ? "All" : technology,
-          mode,
-          top_k: 6,
+          query: q,
+          technology: selectedTech === "All technologies" ? "All" : selectedTech,
+          mode: retrievalMode,
+          top_k: 5,
         }),
       });
-      setResults(data.results || []);
-      setAnalysis(data.analysis || null);
-    } catch (error) {
-      setSearchError(error.message);
+      setSearchResults(data.results || []);
+      setLinguisticAnalysis(data.analysis || null);
+      setDiagnosticSolution(data.ai_solution || null);
+    } catch (err) {
+      setSearchErrorMsg(err.message);
     } finally {
-      setSearching(false);
+      setIsSearching(false);
     }
   }
 
-  async function uploadFiles(files) {
-    if (!files?.length) return;
-    setUploading(true);
-    setNotice("");
-    const form = new FormData();
-    [...files].forEach((file) => form.append("files", file));
-    try {
-      const data = await request("/knowledge-base/upload", { method: "POST", body: form });
-      setNotice(data.message);
-      await loadLibrary(libraryFilter);
-    } catch (error) {
-      setPageError(error.message);
-    } finally {
-      setUploading(false);
+  async function toggleHindiTranslation() {
+    if (!diagnosticSolution) return;
+    if (hindiSolution) {
+      setShowHindiView(!showHindiView);
+      return;
     }
-  }
 
-  async function saveFeedback(index, feedback) {
+    setIsTranslating(true);
     try {
-      await request("/feedback", {
+      const data = await apiRequest("/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ index_from_newest: index, feedback }),
+        body: JSON.stringify({
+          query: searchQuery,
+          root_cause: diagnosticSolution.root_cause || "",
+          action_steps: diagnosticSolution.action_steps || [],
+          code_snippet: diagnosticSolution.code_snippet || "",
+          text: diagnosticSolution.root_cause || "",
+        }),
       });
-      const data = await request("/history");
-      setHistory(data.items || []);
-      setNotice("Feedback saved.");
-    } catch (error) {
-      setPageError(error.message);
+      setHindiSolution(data);
+      setShowHindiView(true);
+    } catch (err) {
+      setFeedbackNotice(`Translation notice: ${err.message}`);
+    } finally {
+      setIsTranslating(false);
     }
   }
 
-  const activePage = pages.find((item) => item.id === page);
-  const gpuLabel = health?.gpu || "CUDA model";
-  const passageCount = health?.indexed_passages?.toLocaleString() || "...";
+  async function executeLinguisticAnalysis(text) {
+    if (!text?.trim()) return;
+    setIsAnalyzing(true);
+    try {
+      const data = await apiRequest("/nlp-analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      setAnalyzerOutput(data);
+    } catch (err) {
+      setGeneralError(err.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
+  function handleCopyCode(code) {
+    if (!code) return;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        setCopiedCodeSuccess(true);
+        setTimeout(() => setCopiedCodeSuccess(false), 2000);
+      });
+    }
+  }
+
+  function navigateToAnalyzerWithQuery(text) {
+    setAnalyzerInput(text);
+    setActiveTab("analyzer");
+    executeLinguisticAnalysis(text);
+  }
+
+  async function handleDocumentUpload(files) {
+    if (!files?.length) return;
+    setIsUploading(true);
+    setFeedbackNotice("");
+    const form = new FormData();
+    [...files].forEach((f) => form.append("files", f));
+
+    try {
+      const data = await apiRequest("/knowledge-base/upload", { method: "POST", body: form });
+      setFeedbackNotice(data.message);
+      await fetchLibraryPassages(librarySearchTerm);
+    } catch (err) {
+      setGeneralError(err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function handleFeedback(index, feedbackType) {
+    try {
+      await apiRequest("/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index_from_newest: index, feedback: feedbackType }),
+      });
+      const data = await apiRequest("/history");
+      setSearchHistoryList(data.items || []);
+      setFeedbackNotice("Feedback recorded. Thank you!");
+      setTimeout(() => setFeedbackNotice(""), 3000);
+    } catch (err) {
+      setGeneralError(err.message);
+    }
+  }
+
+  function handleRerunQuery(query) {
+    setActiveTab("troubleshoot");
+    setSearchQuery(query);
+    executeTroubleshoot(query);
+  }
+
+  const isModelReady = systemHealth?.status === "ready";
+  const acceleratorName = systemHealth?.gpu?.replace("NVIDIA GeForce ", "") || "CUDA Acceleration";
+  const indexedCountFormatted = systemHealth?.indexed_passages?.toLocaleString() || "173,866";
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <button className="brand" onClick={() => setPage("home")} aria-label="FixItAI home">
-          <span className="brand-mark"><Sparkles size={20} /></span>
-          <span className="brand-copy"><strong>FixItAI</strong><small>Technical support workspace</small></span>
-        </button>
-        <nav className="top-nav" aria-label="Main navigation">
-          <button className={page === "home" ? "nav-link active" : "nav-link"} onClick={() => setPage("home")}>Home</button>
-          {pages.map(({ id, label }) => (
-            <button key={id} className={page === id ? "nav-link active" : "nav-link"} onClick={() => setPage(id)}>{label}</button>
-          ))}
-        </nav>
-        <div className="top-status"><span className={health?.status === "ready" ? "status-dot ready" : "status-dot"} />{health?.status === "ready" ? "Model ready" : health?.status === "offline" ? "API offline" : "Connecting"}</div>
+    <div className="product-layout">
+      {/* Sleek Top Navigation Bar */}
+      <header className="navbar">
+        <div className="navbar-container">
+          <div className="nav-brand" onClick={() => setActiveTab("troubleshoot")}>
+            <div className="brand-logo"><Sparkles size={20} /></div>
+            <div className="brand-titles">
+              <span className="brand-name">FixItAI</span>
+              <span className="brand-tag">Diagnostic Intelligence</span>
+            </div>
+          </div>
+
+          <nav className="nav-links">
+            {navigationItems.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                className={`nav-button ${activeTab === id ? "active" : ""}`}
+                onClick={() => setActiveTab(id)}
+              >
+                <Icon size={16} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="nav-status">
+            <span className={`status-indicator ${isModelReady ? "ready" : "warning"}`} />
+            <span>{isModelReady ? "Engine Ready" : "Initializing"}</span>
+          </div>
+        </div>
       </header>
 
-      <main className="main-content">
-        {page === "home" && (
-          <>
-            <section className="home-hero">
-              <div className="hero-glow" />
-              <div className="hero-content">
-                <div className="hero-eyebrow"><span className="hero-eyebrow-dot" /> LOCAL AI FOR TECHNICAL SUPPORT</div>
-                <h1>Get unstuck.<br /><span>Understand why.</span></h1>
-                <p>Find practical troubleshooting guidance, see the evidence behind every result, and keep your technical knowledge organized.</p>
-                <div className="hero-actions">
-                  <button className="button button-white" onClick={() => setPage("ask")}>Ask FixItAI <ArrowRight size={17} /></button>
-                  <button className="button button-ghost" onClick={() => setPage("knowledge")}>Explore knowledge base</button>
+      {/* Main Container */}
+      <main className="content-container">
+        {feedbackNotice && (
+          <div className="alert alert-success">
+            <Check size={16} />
+            <span>{feedbackNotice}</span>
+            <button className="alert-close" onClick={() => setFeedbackNotice("")}><X size={14} /></button>
+          </div>
+        )}
+        {generalError && (
+          <div className="alert alert-error">
+            <AlertTriangle size={16} />
+            <span>{generalError}</span>
+            <button className="alert-close" onClick={() => setGeneralError("")}><X size={14} /></button>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 1: TROUBLESHOOT */}
+        {/* ========================================================================= */}
+        {activeTab === "troubleshoot" && (
+          <div className="tab-pane">
+            <PageHeader
+              eyebrow="INTELLIGENT DIAGNOSTICS"
+              title="Technical Error Diagnostic"
+              description="Synthesize root-cause analysis, step-by-step resolutions, and code fixes from 170k+ developer solutions."
+              actions={
+                <div className="status-badge-group">
+                  <span className="status-badge"><Database size={13} /> {indexedCountFormatted} passages</span>
+                  <span className="status-badge"><Cpu size={13} /> Hybrid Search (BM25 + SBERT)</span>
+                  <span className="status-badge"><Zap size={13} /> {acceleratorName}</span>
+                </div>
+              }
+            />
+
+            {/* Diagnostic Query Card */}
+            <section className="search-card">
+              <form onSubmit={(e) => { e.preventDefault(); executeTroubleshoot(); }}>
+                <div className="search-input-header">
+                  <label htmlFor="diagnostic-query">What error or technical issue are you facing?</label>
+                  <span className="input-tip">Press Enter to diagnose</span>
+                </div>
+
+                <div className="textarea-wrapper">
+                  <textarea
+                    id="diagnostic-query"
+                    rows={3}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        executeTroubleshoot();
+                      }
+                    }}
+                    placeholder="Enter an error message or terminal stack trace, e.g. 'Python raises ModuleNotFoundError: No module named fastapi'..."
+                  />
+                </div>
+
+                {/* Preset Chips */}
+                <div className="preset-strip">
+                  <span className="preset-label">Quick presets:</span>
+                  <div className="preset-buttons">
+                    {presetExamples.map((example) => (
+                      <button
+                        key={example}
+                        type="button"
+                        className="chip-btn"
+                        onClick={() => {
+                          setSearchQuery(example);
+                          executeTroubleshoot(example);
+                        }}
+                      >
+                        {example}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Search Options & Submit */}
+                <div className="search-controls">
+                  <div className="control-group">
+                    <label>Technology Filter</label>
+                    <select value={selectedTech} onChange={(e) => setSelectedTech(e.target.value)}>
+                      {technologyFilters.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="control-group">
+                    <label>Retrieval Scheme</label>
+                    <select value={retrievalMode} onChange={(e) => setRetrievalMode(e.target.value)}>
+                      <option value="Hybrid">Hybrid (BM25 + Dense RRF)</option>
+                      <option value="Semantic">Semantic (Dense BERT Embeddings)</option>
+                      <option value="BM25">BM25 (Probabilistic BM25Okapi)</option>
+                      <option value="TF-IDF">TF-IDF (Sublinear N-Gram Vectorizer)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary search-action-btn"
+                    disabled={isSearching || !searchQuery.trim()}
+                  >
+                    {isSearching ? <LoaderCircle className="spinner" size={16} /> : <Search size={16} />}
+                    <span>{isSearching ? "Diagnosing..." : "Diagnose Issue"}</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            {searchErrorMsg && (
+              <div className="alert alert-error">
+                <AlertTriangle size={16} />
+                <span>{searchErrorMsg}</span>
+              </div>
+            )}
+
+            {isSearching && (
+              <div className="loading-state">
+                <LoaderCircle className="spinner" size={30} />
+                <p>Analyzing syntax, querying hybrid indices, and synthesizing fix...</p>
+              </div>
+            )}
+
+            {/* AI Synthesized Diagnostic Card */}
+            {diagnosticSolution && (
+              <section className="diagnostic-card">
+                <div className="card-top-bar">
+                  <div className="badge-group">
+                    <span className="badge badge-accent"><Sparkles size={13} /> Diagnostic Resolution</span>
+                    {linguisticAnalysis?.severity && (
+                      <span className={`badge severity-${linguisticAnalysis.severity.level}`}>
+                        <AlertTriangle size={12} /> {linguisticAnalysis.severity.level.replace("_", " ")}
+                      </span>
+                    )}
+                    <span className="badge badge-neutral"><Cpu size={12} /> {diagnosticSolution.model_used}</span>
+                  </div>
+
+                  <button
+                    className={`btn btn-sm ${showHindiView ? "btn-active" : "btn-secondary"}`}
+                    onClick={toggleHindiTranslation}
+                    disabled={isTranslating}
+                  >
+                    <Languages size={14} />
+                    <span>{isTranslating ? "Translating..." : showHindiView ? "English View" : "हिंदी में समझें (Hindi)"}</span>
+                  </button>
+                </div>
+
+                {/* Multilingual View */}
+                {showHindiView && hindiSolution && (
+                  <div className="translation-panel">
+                    <div className="translation-heading">
+                      <Languages size={15} />
+                      <strong>हिंदी में विस्तृत समाधान ({hindiSolution.title_hi || "Neural Diagnostic Resolution"}):</strong>
+                    </div>
+                    {hindiSolution.root_cause_hi && (
+                      <div style={{ marginBottom: "12px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.04em", color: "#92400e" }}>
+                          समस्या का मूल कारण (Root Cause):
+                        </span>
+                        <p className="translation-body" style={{ marginTop: "4px" }}>
+                          {hindiSolution.root_cause_hi}
+                        </p>
+                      </div>
+                    )}
+                    {hindiSolution.action_steps_hi?.length > 0 && (
+                      <div>
+                        <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.04em", color: "#92400e" }}>
+                          निवारण के मुख्य चरण (Step-by-Step Resolution):
+                        </span>
+                        <ol className="step-numbered-list" style={{ marginTop: "4px", color: "#451a03" }}>
+                          {hindiSolution.action_steps_hi.map((step, idx) => (
+                            <li key={idx}>{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                    {!hindiSolution.root_cause_hi && !hindiSolution.action_steps_hi && (
+                      <p className="translation-body">{typeof hindiSolution === "string" ? hindiSolution : hindiSolution.translated_text}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Root Cause */}
+                <div className="diag-section">
+                  <h3 className="section-title">Root Cause</h3>
+                  <p className="root-cause-text">{diagnosticSolution.root_cause}</p>
+                </div>
+
+                {/* Actionable Steps */}
+                {diagnosticSolution.action_steps?.length > 0 && (
+                  <div className="diag-section">
+                    <h3 className="section-title">Actionable Resolution</h3>
+                    <ol className="step-numbered-list">
+                      {diagnosticSolution.action_steps.map((step, idx) => (
+                        <li key={idx}>{step}</li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                {/* Code Fix */}
+                {diagnosticSolution.code_snippet && (
+                  <div className="code-box">
+                    <div className="code-box-header">
+                      <span><Terminal size={13} /> Verified Command / Code Fix</span>
+                      <button className="btn-copy" onClick={() => handleCopyCode(diagnosticSolution.code_snippet)}>
+                        {copiedCodeSuccess ? <CheckCheck size={13} /> : <Copy size={13} />}
+                        <span>{copiedCodeSuccess ? "Copied" : "Copy"}</span>
+                      </button>
+                    </div>
+                    <pre><code>{diagnosticSolution.code_snippet}</code></pre>
+                  </div>
+                )}
+
+                <div className="card-bottom-bar">
+                  <span>Synthesized from reference candidate #{searchResults[0]?.chunk_id}</span>
+                  {searchResults[0]?.url && (
+                    <a href={searchResults[0].url} target="_blank" rel="noreferrer" className="external-link">
+                      <span>View Verified Thread</span>
+                      <ArrowUpRight size={13} />
+                    </a>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Empty Search State */}
+            {hasSearched && searchResults.length === 0 && !isSearching && (
+              <div className="empty-state">
+                <CircleHelp size={32} />
+                <h3>No matching solutions found</h3>
+                <p>Try rephrasing the error description or switching the technology filter to "All technologies".</p>
+              </div>
+            )}
+
+            {/* Ranked Evidence Results */}
+            {searchResults.length > 0 && (
+              <section className="evidence-section">
+                <div className="evidence-header">
+                  <div>
+                    <h2>Referenced Technical Documentation</h2>
+                    <p>{searchResults.length} source passages ranked by relevance scores.</p>
+                  </div>
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => navigateToAnalyzerWithQuery(searchQuery)}
+                  >
+                    <Layers size={14} />
+                    <span>Open in Error Analyzer</span>
+                  </button>
+                </div>
+
+                <div className="evidence-list">
+                  {searchResults.map((item, idx) => (
+                    <article className={`evidence-card ${idx === 0 ? "primary-evidence" : ""}`} key={item.chunk_id}>
+                      <div className="evidence-card-header">
+                        <span className="rank-num">#{idx + 1}</span>
+                        <div className="title-area">
+                          <span className="source-name">{item.source} {idx === 0 && "· Primary Reference (Synthesized Above)"}</span>
+                          <h4>{item.title}</h4>
+                        </div>
+                        <span className="score-badge">{(item.score * 100).toFixed(1)}% Match</span>
+                      </div>
+
+                      <p className="passage-body">{item.text}</p>
+
+                      <div className="score-pills-row">
+                        <span className="pill">BM25: {item.bm25_score?.toFixed(2) || "0.00"}</span>
+                        <span className="pill">TF-IDF: {item.tfidf_score?.toFixed(2) || "0.00"}</span>
+                        <span className="pill">BERT: {item.semantic_score?.toFixed(2) || "0.00"}</span>
+                        {item.matched_terms?.length > 0 && (
+                          <span className="pill pill-highlight">Matched: {item.matched_terms.slice(0, 3).join(", ")}</span>
+                        )}
+                      </div>
+
+                      <div className="evidence-card-footer">
+                        {item.url && (
+                          <a href={item.url} target="_blank" rel="noreferrer" className="external-link">
+                            <span>Open source discussion</span>
+                            <ArrowUpRight size={13} />
+                          </a>
+                        )}
+                        {item.question_url && (
+                          <a href={item.question_url} target="_blank" rel="noreferrer" className="external-link">
+                            <span>Original inquiry</span>
+                            <ArrowUpRight size={13} />
+                          </a>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 2: ERROR ANALYZER */}
+        {/* ========================================================================= */}
+        {activeTab === "analyzer" && (
+          <div className="tab-pane">
+            <PageHeader
+              eyebrow="LINGUISTIC INSPECTION"
+              title="Error Syntax Analyzer"
+              description="Inspect tokens, grammatical parts of speech, morphological roots, and automated urgency classification."
+            />
+
+            <section className="search-card">
+              <label htmlFor="analyzer-text" style={{ fontSize: "14px", fontWeight: "700", display: "block", marginBottom: "10px" }}>
+                Input error message, log line, or query
+              </label>
+              <div className="textarea-wrapper">
+                <textarea
+                  id="analyzer-text"
+                  rows={3}
+                  value={analyzerInput}
+                  onChange={(e) => setAnalyzerInput(e.target.value)}
+                  placeholder="Paste an error or terminal log..."
+                />
+              </div>
+
+              <div className="preset-strip">
+                <span className="preset-label">Presets:</span>
+                <div className="preset-buttons">
+                  <button
+                    type="button"
+                    className="chip-btn"
+                    onClick={() => {
+                      const sample = "Python raises ModuleNotFoundError: No module named 'fastapi' when executing main.py";
+                      setAnalyzerInput(sample);
+                      executeLinguisticAnalysis(sample);
+                    }}
+                  >
+                    Python ModuleNotFound
+                  </button>
+                  <button
+                    type="button"
+                    className="chip-btn"
+                    onClick={() => {
+                      const sample = "NullPointerException in Java Spring Boot controller when finding user id";
+                      setAnalyzerInput(sample);
+                      executeLinguisticAnalysis(sample);
+                    }}
+                  >
+                    Java NullPointer
+                  </button>
+                  <button
+                    type="button"
+                    className="chip-btn"
+                    onClick={() => {
+                      const sample = "Docker daemon failed with error: bind address already in use on port 8080";
+                      setAnalyzerInput(sample);
+                      executeLinguisticAnalysis(sample);
+                    }}
+                  >
+                    Docker Port Conflict
+                  </button>
                 </div>
               </div>
-              <div className="hero-visual" aria-hidden="true">
-                <div className="orbit orbit-one" /><div className="orbit orbit-two" />
-                <div className="visual-core"><Sparkles size={35} /></div>
-                <div className="float-card float-card-top"><Search size={15} /> Error context</div>
-                <div className="float-card float-card-bottom"><ShieldCheck size={15} /> Source-backed results</div>
+
+              <div style={{ marginTop: "16px" }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => executeLinguisticAnalysis(analyzerInput)}
+                  disabled={isAnalyzing || !analyzerInput.trim()}
+                >
+                  {isAnalyzing ? <LoaderCircle className="spinner" size={16} /> : <Layers size={16} />}
+                  <span>{isAnalyzing ? "Analyzing..." : "Analyze Syntax"}</span>
+                </button>
               </div>
-              <div className="hero-bottom"><span><Cpu size={15} /> BERT Transformer encoder</span><span><Database size={15} /> Runs locally on your GPU</span><span><ShieldCheck size={15} /> Sources shown with results</span></div>
             </section>
 
-            <section className="home-stats">
-              <StatCard icon={Database} label="Indexed passages" value={passageCount} detail="Technical Q&A and local notes" />
-              <StatCard icon={Cpu} label="Model" value="BERT encoder" detail={health?.pretrained ? "Fine-tuned pretrained BERT" : "BERT trained from scratch"} />
-              <StatCard icon={Gauge} label="GPU" value={gpuLabel.replace("NVIDIA GeForce ", "")} detail="CUDA training and inference" />
-            </section>
+            {analyzerOutput && (
+              <div className="analyzer-grid">
+                {/* Metrics */}
+                <div className="metrics-strip">
+                  <MetricCard icon={Layers} label="Total Tokens" value={analyzerOutput.token_count} detail="Word tokens" />
+                  <MetricCard icon={Check} label="Content Words" value={analyzerOutput.content_token_count} detail="Meaningful tokens" />
+                  <MetricCard icon={X} label="Filtered Stopwords" value={analyzerOutput.stopword_count} detail="Syntactic noise" />
+                  <MetricCard icon={AlertTriangle} label="Error Severity" value={analyzerOutput.severity?.level || "N/A"} detail={`Confidence: ${Math.round((analyzerOutput.severity?.confidence || 0) * 100)}%`} />
+                </div>
 
-            <section className="workspace-section">
-              <div className="section-heading"><div><div className="eyebrow">YOUR WORKSPACE</div><h2>Where do you want to go?</h2><p>Choose a section to get started.</p></div><span className="section-count">05 sections</span></div>
-              <div className="workspace-grid">
-                {pages.map(({ id, label, icon: Icon, description }, index) => (
-                  <button className="workspace-card" key={id} onClick={() => setPage(id)}>
-                    <div className="workspace-card-top"><span className="workspace-icon"><Icon size={20} /></span><span className="workspace-number">0{index + 1}</span></div>
-                    <h3>{label}</h3><p>{description}</p>
-                    <span className="card-link">Open section <ArrowUpRight size={16} /></span>
-                  </button>
+                {/* Part of Speech Tagging */}
+                <section className="detail-card">
+                  <div className="detail-header">
+                    <h3>Part-of-Speech (POS) Tagging</h3>
+                    <p>Token-level grammatical tagging using Penn Treebank tags.</p>
+                  </div>
+                  <div className="tag-chips-wrapper">
+                    {analyzerOutput.pos_tags?.map((item, idx) => (
+                      <div className={`pos-badge pos-${item.category.toLowerCase().replace(/[^a-z]/g, "")}`} key={idx} title={item.description}>
+                        <span className="pos-word">{item.word}</span>
+                        <span className="pos-tag-code">{item.tag}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pos-legend-bar">
+                    <span><i className="legend-dot noun" /> Noun</span>
+                    <span><i className="legend-dot verb" /> Verb</span>
+                    <span><i className="legend-dot adjective" /> Adjective</span>
+                    <span><i className="legend-dot adverb" /> Adverb</span>
+                    <span><i className="legend-dot prep" /> Preposition</span>
+                    <span><i className="legend-dot other" /> Pronoun / Conjunction</span>
+                  </div>
+                </section>
+
+                {/* Stemming vs Lemmatization */}
+                <section className="detail-card">
+                  <div className="detail-header">
+                    <h3>Stemming vs. Lemmatization</h3>
+                    <p>Comparison between heuristic suffix truncation and vocabulary root normalization.</p>
+                  </div>
+                  <div className="table-responsive">
+                    <table className="clean-table">
+                      <thead>
+                        <tr>
+                          <th>Original Word</th>
+                          <th>Porter Stem (Stemming)</th>
+                          <th>WordNet Lemma (Lemmatization)</th>
+                          <th>Rule Category</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyzerOutput.lemmas_vs_stems?.map((row, idx) => (
+                          <tr key={idx}>
+                            <td><strong>{row.original}</strong></td>
+                            <td className="mono">{row.porter_stem}</td>
+                            <td className="mono text-highlight">{row.wordnet_lemma}</td>
+                            <td><span className="chip-badge">{row.rule_applied}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                {/* Technical Entity Extraction */}
+                <section className="detail-card">
+                  <div className="detail-header">
+                    <h3>Technical Entity Recognition (NER)</h3>
+                    <p>Automated identification of programming frameworks, exception types, and identifiers.</p>
+                  </div>
+                  <div className="ner-boxes-row">
+                    <div className="ner-box">
+                      <h4>Frameworks & Stacks</h4>
+                      <div className="ner-chips">
+                        {analyzerOutput.entities?.technologies?.length > 0 ? (
+                          analyzerOutput.entities.technologies.map((t) => <span className="chip" key={t}>{t}</span>)
+                        ) : <span className="muted-text">None detected</span>}
+                      </div>
+                    </div>
+                    <div className="ner-box">
+                      <h4>Exception & Error Types</h4>
+                      <div className="ner-chips">
+                        {analyzerOutput.entities?.errors?.length > 0 ? (
+                          analyzerOutput.entities.errors.map((e) => <span className="chip chip-danger" key={e}>{e}</span>)
+                        ) : <span className="muted-text">None detected</span>}
+                      </div>
+                    </div>
+                    <div className="ner-box">
+                      <h4>Code Identifiers</h4>
+                      <div className="ner-chips">
+                        {analyzerOutput.entities?.code_identifiers?.length > 0 ? (
+                          analyzerOutput.entities.code_identifiers.map((c) => <span className="chip chip-code" key={c}>{c}</span>)
+                        ) : <span className="muted-text">None detected</span>}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 3: KNOWLEDGE BASE */}
+        {/* ========================================================================= */}
+        {activeTab === "knowledge" && (
+          <div className="tab-pane">
+            <PageHeader
+              eyebrow="TECHNICAL REPOSITORY"
+              title="Knowledge Base"
+              description="Browse through indexed solutions or upload proprietary guides, runbooks, and documents."
+            />
+
+            <div className="library-actions-row">
+              <div className="library-search-box">
+                <Search size={16} />
+                <input
+                  type="text"
+                  value={librarySearchTerm}
+                  onChange={(e) => setLibrarySearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && fetchLibraryPassages(librarySearchTerm)}
+                  placeholder="Filter by title, technology, or keywords..."
+                />
+                <button className="btn btn-sm btn-primary" onClick={() => fetchLibraryPassages(librarySearchTerm)}>
+                  Search
+                </button>
+              </div>
+
+              <label className="btn btn-primary upload-label">
+                <Upload size={15} />
+                <span>{isUploading ? "Uploading..." : "Upload Document"}</span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".txt,.md,.markdown,.pdf,.csv,.json"
+                  onChange={(e) => handleDocumentUpload(e.target.files)}
+                  disabled={isUploading}
+                />
+              </label>
+            </div>
+
+            <div className="library-meta-strip">
+              <span><Database size={14} /> {libraryData.total.toLocaleString()} total passages</span>
+              <span>Supported formats: TXT, Markdown, PDF, CSV, JSON</span>
+            </div>
+
+            {isLibraryLoading ? (
+              <div className="loading-state">
+                <LoaderCircle className="spinner" size={28} />
+                <p>Loading documentation passages...</p>
+              </div>
+            ) : (
+              <div className="library-grid">
+                {libraryData.items.map((item) => (
+                  <article key={item.chunk_id} className="library-card">
+                    <div className="library-card-icon"><FileText size={18} /></div>
+                    <div className="library-card-body">
+                      <span className="library-category">{item.category || item.source}</span>
+                      <h4>{item.title}</h4>
+                      <p>{item.text}</p>
+                      <div className="tag-chips">
+                        {(item.technologies || []).slice(0, 4).map((tech) => (
+                          <span className="chip" key={tech}>{tech}</span>
+                        ))}
+                      </div>
+                    </div>
+                    {item.url && (
+                      <a href={item.url} target="_blank" rel="noreferrer" className="card-corner-link">
+                        <ArrowUpRight size={15} />
+                      </a>
+                    )}
+                  </article>
                 ))}
               </div>
-            </section>
-          </>
+            )}
+
+            {!isLibraryLoading && libraryData.items.length < libraryData.total && (
+              <div className="load-more-row">
+                <button className="btn btn-secondary" onClick={() => fetchLibraryPassages(librarySearchTerm, true)}>
+                  <span>Load more passages</span>
+                  <ArrowDownRight size={15} />
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
-        {page === "ask" && (
-          <>
-            <PageHeading eyebrow="TECHNICAL TROUBLESHOOTING" title="Ask FixItAI" copy="Ask a general tech question or describe a problem. FixItAI finds relevant indexed guidance and shows its sources." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
-            <div className="search-layout">
-              <section className="search-panel">
-                <form onSubmit={runSearch}>
-                  <label className="field-label" htmlFor="question">What tech question can I help with?</label>
-                  <textarea id="question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask a question, for example: “Why am I not receiving Teams notifications?” Add your device or app version for more specific guidance." rows={5} />
-                  <div className="example-row"><span>Try:</span>{examples.map((example) => <button type="button" key={example} onClick={() => setQuery(example)}>{example}</button>)}</div>
-                  <div className="search-options">
-                    <label>Technology<select value={technology} onChange={(event) => setTechnology(event.target.value)}>{technologies.map((item) => <option key={item}>{item}</option>)}</select></label>
-                    <label>Search mode<select value={mode} onChange={(event) => setMode(event.target.value)}>{["Hybrid", "Semantic", "BM25", "TF-IDF"].map((item) => <option key={item}>{item}</option>)}</select></label>
-                    <button className="button button-primary search-submit" type="submit" disabled={searching || !query.trim()}>{searching ? <LoaderCircle className="spin" size={17} /> : <Search size={17} />}{searching ? "Searching..." : "Find solutions"}</button>
-                  </div>
-                </form>
-              </section>
-              <aside className="search-aside"><div className="aside-icon"><CircleHelp size={21} /></div><h3>Get better matches</h3><ul><li>Paste the complete error message.</li><li>Name the language, framework, or service.</li><li>Include what you already tried.</li></ul><div className="aside-note"><ShieldCheck size={16} /> Results include their source and attribution.</div></aside>
-            </div>
-            {searchError && <div className="notice error"><X size={17} />{searchError}</div>}
-            {searching && <div className="loading-row"><LoaderCircle className="spin" /> Searching the CUDA model and technical guides...</div>}
-            {results.length > 0 && <section className="results-section"><div className="section-heading"><div><div className="eyebrow">MATCHED EVIDENCE</div><h2>Recommended sources</h2><p>{results.length} passages matched your question.</p></div>{analysis && <details className="analysis"><summary>Query signals <ChevronDown size={14} /></summary><pre>{JSON.stringify(analysis, null, 2)}</pre></details>}</div>
-              <article className="answer-card"><div className="eyebrow">BEST MATCHING GUIDANCE</div><h3>{results[0].title}</h3><p>{results[0].text}</p><div className="answer-source">From {results[0].source}{results[0].url && <> · <a href={results[0].url} target="_blank" rel="noreferrer">Open source <ArrowUpRight size={13} /></a></>}</div></article>
-              {results[0].score < 0.2 && <div className="notice warning">The match is weak. These suggestions may not fit your question; check the linked source and share more details to narrow it down.</div>}
-              <div className="result-list">{results.map((result, index) => <article className="result-card" key={result.chunk_id}>
-                <div className="result-card-head"><span className="result-rank">{String(index + 1).padStart(2, "0")}</span><div><div className="result-source">{result.source}</div><h3>{result.title}</h3></div><span className="score-pill">{result.score.toFixed(3)} match</span></div>
-                <p className="result-text">{result.text}</p>
-                <div className="result-meta"><span>TF-IDF {result.tfidf_score.toFixed(2)}</span><span>BM25 {result.bm25_score.toFixed(2)}</span><span>BERT similarity {result.semantic_score.toFixed(2)}</span></div>
-                <div className="result-actions">{result.url && <a href={result.url} target="_blank" rel="noreferrer">Open answer source <ArrowUpRight size={14} /></a>}{result.question_url && <a href={result.question_url} target="_blank" rel="noreferrer">View question <ArrowUpRight size={14} /></a>}</div>
-                {result.attribution && <details className="attribution"><summary>Attribution details</summary><p>{result.attribution}</p></details>}
-              </article>)}</div>
-              <p className="disclaimer">Retrieved passages are community or project notes, not generated or independently verified diagnoses. Check commands against your own environment.</p>
-            </section>}
-          </>
-        )}
+        {/* ========================================================================= */}
+        {/* TAB 4: QUERY HISTORY */}
+        {/* ========================================================================= */}
+        {activeTab === "history" && (
+          <div className="tab-pane">
+            <PageHeader
+              eyebrow="AUDIT TRAIL"
+              title="Query History"
+              description="Review past troubleshooting searches, record relevance feedback, or rerun any inquiry."
+            />
 
-        {page === "knowledge" && (
-          <>
-            <PageHeading eyebrow="YOUR TECHNICAL LIBRARY" title="Knowledge base" copy="Browse indexed passages and add technical documents you own or are authorized to use." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
-            {notice && <div className="notice success"><Check size={17} />{notice}<button onClick={() => setNotice("")} aria-label="Dismiss"><X size={16} /></button></div>}
-            {pageError && <div className="notice error"><X size={17} />{pageError}</div>}
-            <div className="library-toolbar"><div className="library-search"><Search size={18} /><input value={libraryFilter} onChange={(event) => setLibraryFilter(event.target.value)} onKeyDown={(event) => event.key === "Enter" && loadLibrary(libraryFilter)} placeholder="Filter by title, source, technology, or passage..." /><button onClick={() => loadLibrary(libraryFilter)}>Search</button></div>
-              <label className="button button-primary upload-button"><Upload size={17} />{uploading ? "Indexing..." : "Add documents"}<input type="file" multiple accept=".txt,.md,.markdown,.pdf,.csv,.json" onChange={(event) => uploadFiles(event.target.files)} disabled={uploading} /></label></div>
-            <div className="library-summary"><span><Database size={16} /> {library.total.toLocaleString()} passages</span><span>Showing {library.items.length.toLocaleString()} of {library.total.toLocaleString()}</span><span>TXT, Markdown, PDF, CSV, JSON</span></div>
-            {libraryLoading ? <div className="loading-row"><LoaderCircle className="spin" /> Loading the library...</div> : <div className="library-list">{library.items.map((item) => <article key={item.chunk_id} className="library-item"><div className="library-item-icon"><FileText size={18} /></div><div className="library-item-content"><div className="result-source">{item.category || item.source}</div><h3>{item.title}</h3><p>{item.text}</p><div className="tag-row">{(item.technologies || []).slice(0, 5).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div></div>{item.url && <a className="icon-link" href={item.url} target="_blank" rel="noreferrer" aria-label="Open source"><ArrowUpRight size={17} /></a>}</article>)}</div>}
-            {!libraryLoading && library.items.length < library.total && <div className="library-more"><button className="button button-light" onClick={() => loadLibrary(libraryFilter, true)}>Load more passages <ArrowDownRight size={15} /></button></div>}
-          </>
-        )}
-
-        {page === "evaluation" && (
-          <>
-            <PageHeading eyebrow="MODEL PERFORMANCE" title="Evaluation" copy="Held-out retrieval results for the BERT encoder trained for question–answer retrieval." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
-            {pageError && <div className="notice error">{pageError}</div>}
-            {evaluation?.validation ? <>
-              <div className="evaluation-stats"><StatCard icon={Search} label="Recall at 1" value={`${(evaluation.validation.recall_at_1 * 100).toFixed(1)}%`} detail="Top result is the target" /><StatCard icon={Database} label="Recall at 5" value={`${(evaluation.validation.recall_at_5 * 100).toFixed(1)}%`} detail="Target in top five" /><StatCard icon={Gauge} label="MRR" value={evaluation.validation.mrr.toFixed(3)} detail="Mean reciprocal rank" /><StatCard icon={MessageSquareText} label="Validation queries" value={evaluation.validation.queries.toLocaleString()} detail={`${evaluation.validation.candidate_answers.toLocaleString()} answer candidates`} /></div>
-              <section className="panel chart-panel"><div className="section-heading"><div><div className="eyebrow">TRAINING RUN</div><h2>Progress by epoch</h2><p>Training loss and held-out retrieval metrics.</p></div><span className="gpu-badge"><Cpu size={15} /> {evaluation.gpu}</span></div><TrainingChart rows={evaluation.all_epochs || []} /></section>
-              <div className="notice warning"><ShieldCheck size={18} /><span>Labels use the highest-voted answer as a weak relevance signal. These metrics do not prove that answers are technically correct or current.</span></div>
-            </> : !pageError ? <div className="empty-state"><Gauge size={28} /><h3>No evaluation report found</h3><p>Train the model with the supplied dataset to generate its held-out metrics.</p></div> : null}
-          </>
-        )}
-
-        {page === "history" && (
-          <>
-            <PageHeading eyebrow="RECENT ACTIVITY" title="Search history" copy="Review your recent questions and mark whether the retrieved evidence was useful." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
-            {pageError && <div className="notice error">{pageError}</div>}{notice && <div className="notice success"><Check size={16} />{notice}</div>}
-            {history.length ? <div className="history-list">{history.map((item, index) => <article className="history-item" key={`${item.query}-${index}`}><div className="history-icon"><MessageSquareText size={18} /></div><div className="history-body"><h3>{item.query}</h3><p>{item.result_ids?.length || 0} source passages Â· {item.feedback || "Feedback not given"}</p></div><div className="history-feedback"><button className={item.feedback === "Useful" ? "feedback chosen" : "feedback"} onClick={() => saveFeedback(index, "Useful")}><Check size={15} /> Useful</button><button className={item.feedback === "Not useful" ? "feedback chosen" : "feedback"} onClick={() => saveFeedback(index, "Not useful")}><X size={15} /> Not useful</button></div></article>)}</div> : !pageError && <div className="empty-state"><History size={28} /><h3>No searches yet</h3><p>Your questions will show here after you use Ask FixItAI.</p><button className="button button-primary" onClick={() => setPage("ask")}>Ask a question <ArrowRight size={16} /></button></div>}
-            <p className="disclaimer">History is stored locally by default. Configure FIXITAI_MONGODB_URI to save it in MongoDB.</p>
-          </>
-        )}
-
-        {page === "about" && (
-          <>
-            <PageHeading eyebrow="THE PROJECT" title="About FixItAI" copy="A local technical troubleshooting and evidence-retrieval workspace." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
-            <section className="about-hero"><div className="about-icon"><Sparkles size={25} /></div><h2>Find evidence. Make the next step clearer.</h2><p>FixItAI combines searchable technical documentation with a BERT Transformer encoder trained for question–answer retrieval. It returns passages and source links instead of generating unsupported fixes.</p></section>
-            <div className="about-grid"><article className="panel"><Cpu size={20} /><h3>BERT retrieval encoder</h3><p>The bidirectional BERT encoder maps questions and answers to vectors. Its initialization status and training setup are reported with the model artifacts.</p></article><article className="panel"><Search size={20} /><h3>Hybrid retrieval</h3><p>TF-IDF and BM25 identify lexical matches; BERT adds dense semantic similarity to the ranking.</p></article><article className="panel"><ShieldCheck size={20} /><h3>Evidence with limits</h3><p>Stack Overflow answers are community contributions. Vote counts provide weak labels, not proof of correctness or freshness.</p></article><article className="panel"><Database size={20} /><h3>Your own library</h3><p>Add TXT, Markdown, PDF, CSV, or JSON files that you are authorized to index. Uploaded passages stay in the local project.</p></article></div>
-            <div className="license-note"><Info size={17} /><p>Retrieved Stack Overflow passages keep their post links and attribution. Review applicable CC BY-SA terms before redistributing them.</p></div>
-          </>
+            {searchHistoryList.length > 0 ? (
+              <div className="history-list">
+                {searchHistoryList.map((item, idx) => (
+                  <article className="history-row" key={`${item.query}-${idx}`}>
+                    <div className="history-icon-box"><MessageSquareText size={18} /></div>
+                    <div className="history-content">
+                      <h4>{item.query}</h4>
+                      <span className="history-meta">{item.result_ids?.length || 0} retrieved passages · Status: {item.feedback || "Feedback pending"}</span>
+                    </div>
+                    <div className="history-actions">
+                      <button
+                        className="feedback-btn"
+                        onClick={() => handleRerunQuery(item.query)}
+                        title="Rerun this diagnostic inquiry in Troubleshoot"
+                      >
+                        <Play size={13} />
+                        <span>Rerun</span>
+                      </button>
+                      <button
+                        className={`feedback-btn ${item.feedback === "Useful" ? "active-useful" : ""}`}
+                        onClick={() => handleFeedback(idx, "Useful")}
+                      >
+                        <Check size={14} />
+                        <span>Useful</span>
+                      </button>
+                      <button
+                        className={`feedback-btn ${item.feedback === "Not useful" ? "active-not-useful" : ""}`}
+                        onClick={() => handleFeedback(idx, "Not useful")}
+                      >
+                        <X size={14} />
+                        <span>Not useful</span>
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <History size={32} />
+                <h3>No queries recorded yet</h3>
+                <p>Troubleshoot a technical error to see search history here.</p>
+              </div>
+            )}
+          </div>
         )}
       </main>
-      <footer className="site-footer"><span>FixItAI</span><span>Local technical retrieval workspace</span><span>{health?.gpu || "CUDA model"}</span></footer>
+
+      {/* Clean Footer */}
+      <footer className="footer">
+        <div className="footer-container">
+          <div className="footer-left">
+            <strong>FixItAI</strong>
+            <span>Technical Diagnostic Intelligence Platform</span>
+          </div>
+          <div className="footer-right">
+            <span>Indexed Passages: {indexedCountFormatted}</span>
+            <span className="separator">·</span>
+            <span>{acceleratorName}</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function TrainingChart({ rows }) {
-  if (!rows.length) return <div className="empty-chart">No epoch history is available.</div>;
-  const width = 860;
-  const height = 230;
-  const pad = 28;
-  const metrics = [
-    { key: "recall_at_1", label: "Recall @ 1", color: "#2767db" },
-    { key: "recall_at_5", label: "Recall @ 5", color: "#13a37b" },
-    { key: "mrr", label: "MRR", color: "#8b5bd6" },
-  ];
-  const x = (index) => pad + (rows.length <= 1 ? 0 : index * (width - pad * 2) / (rows.length - 1));
-  const y = (value) => height - pad - Math.max(0, Math.min(1, value)) * (height - pad * 2);
-  return <div className="chart-wrap"><div className="chart-legend">{metrics.map((metric) => <span key={metric.key}><i style={{ background: metric.color }} />{metric.label}</span>)}</div><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Model recall and MRR across training epochs"><line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} className="chart-axis" />{[0, 0.5, 1].map((v) => <g key={v}><line x1={pad} y1={y(v)} x2={width - pad} y2={y(v)} className="chart-grid" /><text x="2" y={y(v) + 4} className="chart-label">{v.toFixed(1)}</text></g>)}{metrics.map((metric) => <g key={metric.key}><polyline points={rows.map((row, index) => `${x(index)},${y(row[metric.key] || 0)}`).join(" ")} fill="none" stroke={metric.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />{rows.map((row, index) => <circle key={index} cx={x(index)} cy={y(row[metric.key] || 0)} r="4" fill={metric.color} />)}</g>)}{rows.map((row, index) => <text key={row.epoch} x={x(index)} y={height - 5} textAnchor="middle" className="chart-label">{row.epoch}</text>)}</svg></div>;
-}
-
 export default App;
-
-
-

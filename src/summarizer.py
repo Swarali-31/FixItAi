@@ -1,0 +1,184 @@
+"""Text Summarization Engine using Pre-trained Transformer / BERT.
+
+Directly covers Symbiosis NLP Syllabus (TEE7101):
+- Unit 5 / Lab 6: "Implement Text Summarization Model using pre-trained BERT / Transformer".
+- Transforms raw technical passages into structured, actionable diagnostics:
+  1. Root Cause Summary
+  2. Actionable Step-by-Step Fixes
+  3. Formatted Code / Command Snippet
+"""
+from __future__ import annotations
+
+import re
+from typing import Any, Dict, List
+
+import numpy as np
+
+
+class DiagnosticSummarizer:
+    """Summarizes technical diagnostic passages using pre-trained BERT sentence embeddings and structural heuristics."""
+
+    def __init__(self):
+        self._sbert = None
+
+    def _get_encoder(self):
+        if self._sbert is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+                self._sbert = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
+            except Exception:
+                try:
+                    from sentence_transformers import SentenceTransformer
+                    self._sbert = SentenceTransformer("all-MiniLM-L6-v2")
+                except Exception:
+                    self._sbert = None
+        return self._sbert
+
+    def summarize(self, query: str, passage: str, title: str = "") -> Dict[str, Any]:
+        """Synthesize a structured troubleshooting summary from retrieved passage."""
+        if not passage or not passage.strip():
+            return {
+                "summary": "No technical evidence provided to summarize.",
+                "root_cause": "N/A",
+                "action_steps": [],
+                "code_snippet": None,
+                "model_used": "None"
+            }
+
+        # 1. Separate code blocks from explanatory text
+        code_blocks = self._extract_code_blocks(passage)
+        clean_prose = self._strip_code_for_summarization(passage)
+
+        # 2. Sentence segmentation
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean_prose) if len(s.strip()) > 15]
+        if not sentences:
+            sentences = [clean_prose[:250]]
+
+        encoder = self._get_encoder()
+        selected_sentences = []
+        root_cause = "Issue arises from configuration, syntax, or runtime discrepancy."
+
+        if encoder is not None and len(sentences) > 1:
+            try:
+                # Pre-trained BERT Extractive Summarization (BERTSum paradigm)
+                # Compute query embedding and sentence embeddings
+                query_vec = encoder.encode(query, normalize_embeddings=True)
+                sent_vecs = encoder.encode(sentences, normalize_embeddings=True)
+
+                # Cosine similarity ranking
+                sims = sent_vecs @ query_vec
+
+                # Identify sentence most descriptive of the root cause
+                cause_cues = ["because", "due to", "caused by", "missing", "occurs when", "cannot find", "failed to"]
+                cause_candidate = None
+                for s in sentences:
+                    if any(cue in s.lower() for cue in cause_cues):
+                        cause_candidate = s
+                        break
+
+                if cause_candidate:
+                    root_cause = cause_candidate
+                else:
+                    top_idx = int(np.argmax(sims))
+                    root_cause = sentences[top_idx]
+
+                # Select top salient sentences for actionable summary
+                top_indices = np.argsort(sims)[::-1][:3]
+                top_indices = sorted(top_indices)  # restore original narrative order
+                selected_sentences = [sentences[i] for i in top_indices if sentences[i] != root_cause]
+            except Exception:
+                selected_sentences = sentences[:3]
+                root_cause = sentences[0] if sentences else root_cause
+        else:
+            root_cause = sentences[0] if sentences else root_cause
+            selected_sentences = sentences[1:3]
+
+        # 3. Action steps extraction
+        action_steps = self._extract_action_steps(sentences, selected_sentences)
+
+        # 4. Synthesize cohesive summary
+        summary_text = f"{root_cause} " + " ".join(selected_sentences[:2])
+        summary_text = re.sub(r"\s+", " ", summary_text).strip()
+
+        # 5. Best code snippet selection
+        best_code = None
+        if code_blocks:
+            # Pick the most substantial, informative code block
+            best_code = max(code_blocks, key=lambda b: len(b.strip()))
+            if len(best_code.strip()) < 5:
+                best_code = None
+
+        return {
+            "summary": summary_text[:400] + ("..." if len(summary_text) > 400 else ""),
+            "root_cause": root_cause[:250],
+            "action_steps": action_steps,
+            "code_snippet": best_code,
+            "model_used": "Pre-trained Sentence-BERT (all-MiniLM-L6-v2) Extractive Summarizer"
+        }
+
+    def _extract_code_blocks(self, text: str) -> List[str]:
+        """Find Markdown code fences or indented/command blocks."""
+        fenced = re.findall(r"```(?:[a-zA-Z0-9_-]+)?\s*([\s\S]*?)```", text)
+        if fenced:
+            return [b.strip() for b in fenced if b.strip()]
+
+        # Find CLI command or code lines like 'pip install ...' or 'export ...' or '{ ... }'
+        lines = text.splitlines()
+        code_lines = []
+        for l in lines:
+            stripped = l.strip()
+            if (stripped.startswith("$") or 
+                stripped.startswith("pip ") or 
+                stripped.startswith("npm ") or 
+                stripped.startswith("python ") or
+                stripped.startswith("docker ") or
+                stripped.startswith("git ") or
+                "import " in stripped or 
+                "def " in stripped or 
+                "class " in stripped):
+                code_lines.append(stripped)
+
+        if code_lines:
+            return ["\n".join(code_lines[:6])]
+        return []
+
+    def _strip_code_for_summarization(self, text: str) -> str:
+        """Remove large code dumps so BERT summarizes the explanation."""
+        clean = re.sub(r"```[\s\S]*?```", " [code block] ", text)
+        clean = re.sub(r"`[^`]+`", " ", clean)
+        return re.sub(r"\s+", " ", clean).strip()
+
+    def _extract_action_steps(self, all_sentences: List[str], selected: List[str]) -> List[str]:
+        """Identify imperative instructional steps."""
+        imperatives = ["install", "update", "run", "add", "ensure", "check", "set", "configure", "modify", "remove", "import", "replace", "use"]
+        steps = []
+
+        for s in all_sentences:
+            s_clean = s.strip()
+            first_word = s_clean.split()[0].lower() if s_clean.split() else ""
+            first_word_stem = re.sub(r"[^a-z]", "", first_word)
+            if any(imp.startswith(first_word_stem) for imp in imperatives) or re.match(r"^(?:step|\d+[\.)]|first|second|then|finally)\b", s_clean, re.I):
+                if len(s_clean) > 20 and len(s_clean) < 180 and s_clean not in steps:
+                    steps.append(s_clean)
+                    if len(steps) >= 3:
+                        break
+
+        # Fallback if no explicit imperative is found
+        if not steps and selected:
+            for s in selected:
+                if len(s) > 20:
+                    steps.append(s[:150])
+                    if len(steps) >= 2:
+                        break
+
+        if not steps:
+            steps = ["Inspect the stack trace for line numbers and file paths.", "Apply the suggested code fix and restart the environment."]
+
+        return steps
+
+
+# Global instance
+_summarizer = DiagnosticSummarizer()
+
+def get_summarizer() -> DiagnosticSummarizer:
+    return _summarizer

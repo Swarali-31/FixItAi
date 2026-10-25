@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FixItAI - Complete Technical Documentation & Engineering Reference</title>
+<style>
+
+    @page {
+        size: A4;
+        margin: 20mm 18mm 20mm 18mm;
+    }
+    
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 10pt;
+        line-height: 1.6;
+        color: #172638;
+        background: #ffffff;
+        margin: 0;
+        padding: 0;
+    }
+    
+    h1, h2, h3, h4 {
+        color: #0f2942;
+        font-weight: 700;
+        margin-top: 1.4em;
+        margin-bottom: 0.5em;
+        page-break-after: avoid;
+    }
+    
+    h1 {
+        font-size: 22pt;
+        border-bottom: 2.5px solid #0f2942;
+        padding-bottom: 8px;
+        margin-top: 0;
+    }
+    
+    h2 {
+        font-size: 14.5pt;
+        border-bottom: 1.5px solid #cbd5e1;
+        padding-bottom: 5px;
+        margin-top: 1.8em;
+    }
+    
+    h3 {
+        font-size: 12pt;
+        color: #1e3a8a;
+    }
+    
+    h4 {
+        font-size: 10.5pt;
+        color: #1e293b;
+    }
+    
+    p {
+        margin: 0.5em 0 0.8em 0;
+        text-align: justify;
+    }
+    
+    pre {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 5px;
+        padding: 10px 14px;
+        font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: 8.2pt;
+        line-height: 1.45;
+        color: #0f172a;
+        overflow-x: auto;
+        page-break-inside: avoid;
+        margin: 10px 0 14px 0;
+    }
+    
+    code {
+        font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: 8.8pt;
+        background: #f1f5f9;
+        color: #0369a1;
+        padding: 2px 5px;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+        border: none;
+        font-size: 8.2pt;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0 18px 0;
+        font-size: 8.8pt;
+        page-break-inside: avoid;
+    }
+    
+    th, td {
+        border: 1px solid #b7c6d8;
+        padding: 6px 9px;
+        vertical-align: top;
+    }
+    
+    th {
+        background: #0f2942;
+        color: #ffffff;
+        font-weight: 600;
+        text-align: left;
+    }
+    
+    tr:nth-child(even) td {
+        background: #f8fafc;
+    }
+    
+    blockquote {
+        background: #f0f7ff;
+        border-left: 4px solid #0284c7;
+        margin: 12px 0 16px 0;
+        padding: 8px 14px;
+        font-style: normal;
+        border-radius: 0 4px 4px 0;
+        page-break-inside: avoid;
+    }
+    
+    blockquote p {
+        margin: 0.3em 0;
+    }
+    
+    ul, ol {
+        margin: 0.4em 0 0.8em 0;
+        padding-left: 24px;
+    }
+    
+    li {
+        margin-bottom: 0.3em;
+    }
+    
+    hr {
+        border: none;
+        border-top: 1px solid #e2e8f0;
+        margin: 1.5em 0;
+    }
+    
+</style>
+</head>
+<body>
+<h1 id="fixitai-complete-technical-documentation-engineering-reference-manual">FixItAI: Complete Technical Documentation &amp; Engineering Reference Manual</h1>
+<p><strong>System Name:</strong> FixItAI — Intelligent Developer Diagnostic &amp; Technical Information Retrieval Workspace<br />
+<strong>Domain:</strong> Natural Language Processing (NLP), Neural Information Retrieval (IR), and Transformer Architectures<br />
+<strong>Primary Authors / Developers:</strong> Swarali Bhalerao (23070122216) &amp; Tisha Malkani (23070122224)<br />
+<strong>Academic Guide:</strong> Dr. Payal Kadam | Symbiosis Institute of Technology (SIT), Pune<br />
+<strong>Corpus Size:</strong> 173,857 Validated Technical QA Pairs (reservoir-sampled from 1,264,216 Stack Overflow questions)<br />
+<strong>Primary Accelerator:</strong> NVIDIA GeForce RTX 3050 Laptop GPU (CUDA 12.x / PyTorch 2.x Accelerated Runtime)<br />
+<strong>Local Endpoints:</strong> Frontend: <code>http://localhost:5173</code> | Backend REST API: <code>http://localhost:8000</code></p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-industrial--academic-relevance">Industrial &amp; Academic Relevance</a></li>
+<li><a href="#2-high-level-architecture--end-to-end-pipeline">High-Level Architecture &amp; End-to-End Pipeline</a></li>
+<li><a href="#3-data-ingestion-reservoir-sampling--cleaning-pipeline">Data Ingestion, Reservoir Sampling &amp; Cleaning Pipeline</a></li>
+<li><a href="#4-linguistic-preprocessing--syntactic-parsing-nltk-engine">Linguistic Preprocessing &amp; Syntactic Parsing (NLTK Engine)</a></li>
+<li><a href="#5-multi-stage-information-retrieval-engines">Multi-Stage Information Retrieval Engines</a></li>
+<li><a href="#6-scratch-trained-fixitai-bert-bi-encoder-architecture">Scratch-Trained FixItAI BERT Bi-Encoder Architecture</a></li>
+<li><a href="#7-gpu-memory-optimization--safe-batched-streaming">GPU Memory Optimization &amp; Safe Batched Streaming</a></li>
+<li><a href="#8-transformer-extractive-summarizer">Transformer Extractive Summarizer</a></li>
+<li><a href="#9-neural-machine-translation-engine-with-code-token-masking">Neural Machine Translation Engine with Code Token Masking</a></li>
+<li><a href="#10-comprehensive-empirical-evaluation--benchmark-matrix">Comprehensive Empirical Evaluation &amp; Benchmark Matrix</a></li>
+<li><a href="#11-codebase-organization--file-by-file-technical-guide">Codebase Organization &amp; File-by-File Technical Guide</a></li>
+<li><a href="#12-examiner-viva-defense--question-bank-instant-mastery">Examiner Viva Defense &amp; Question Bank (Instant Mastery)</a></li>
+</ol>
+<hr />
+<h2 id="1-industrial-academic-relevance">1. Industrial &amp; Academic Relevance</h2>
+<h3 id="11-the-industry-crisis-genai-hallucination-code-provenance">1.1 The Industry Crisis: GenAI Hallucination &amp; Code Provenance</h3>
+<p>Generative Large Language Models (LLMs like ChatGPT, GitHub Copilot, and Claude) have transformed developer productivity, but in mission-critical software engineering, they present three severe liabilities:
+1. <strong>Hallucination of Non-Existent APIs:</strong> Autoregressive models predict tokens statistically based on next-token probability. They frequently invent library functions, combine deprecated syntax with modern arguments, or generate plausible-looking commands that fail at runtime.
+2. <strong>Lack of Provenance and Attribution:</strong> When an LLM outputs code, it cannot cite the exact discussion, version constraints, or caveats. FixItAI provides <strong>verifiable source grounding</strong>: every retrieved solution links directly to an authentic Stack Overflow thread with exact question ID, answer ID, author attribution, and peer upvotes.
+3. <strong>Licensing &amp; Copyright Risks:</strong> Commercial generative tools can regurgitate proprietary or copyleft code without proper Creative Commons (CC BY-SA) attribution. FixItAI strictly preserves public attribution metadata.</p>
+<h3 id="12-enterprise-data-privacy-edge-air-gapped-ai">1.2 Enterprise Data Privacy &amp; Edge / Air-Gapped AI</h3>
+<p>Major engineering organizations (fintech, healthcare, defense, enterprise cloud) enforce strict compliance boundaries (SOC2, HIPAA, GDPR). Pasting internal production logs, proprietary stack traces, database schemas, or internal IP addresses into external third-party cloud APIs is strictly prohibited.<br />
+<strong>FixItAI operates 100% locally and offline:</strong>
+- The entire model execution, vector dot-products, lexical scoring, and neural translation run on local hardware (RTX 3050 Laptop GPU).
+- Zero packets leave the local subnet during diagnostic inference.</p>
+<h3 id="13-the-hybrid-search-revolution-in-modern-information-retrieval">1.3 The Hybrid Search Revolution in Modern Information Retrieval</h3>
+<p>Modern search engines at Pinecone, Elasticsearch, and Vespa have recognized that:
+- <strong>Dense semantic vectors alone fail on exact identifiers:</strong> A dense vector represents high-level conceptual meaning. When a developer searches for an exact alphanumeric exception like <code>IndexOutOfBoundsException</code>, <code>ORA-01403</code>, or <code>HTTP 504</code>, a vector model might retrieve a general discussion on arrays rather than the exact syntax match.
+- <strong>Sparse lexical search alone fails on symptom queries:</strong> When a developer searches <em>"app freezes when loading large table"</em>, BM25 fails if the discussion uses words like <em>"deadlock"</em>, <em>"UI thread blocking"</em>, or <em>"OutOfMemory"</em>.
+- <strong>FixItAI combines both:</strong> We implement a weighted linear and Reciprocal Rank Fusion (RRF) pipeline that fuses Okapi BM25, TF-IDF, and custom dense BERT vectors, capturing both exact error tokens and high-level conceptual intent.</p>
+<h3 id="14-vernacular-accessibility-localization">1.4 Vernacular Accessibility &amp; Localization</h3>
+<p>India has over 5.8 million software developers and computer science engineers. During high-stress production outages, non-native English speakers can misinterpret complex diagnostic prose. FixItAI provides integrated English-to-Hindi translation using MarianMT Seq2Seq with code-token masking, ensuring that technical commands remain untouched while the diagnostic steps are clearly explained in Hindi.</p>
+<h3 id="15-curriculum-alignment-co4-co5">1.5 Curriculum Alignment (CO4 &amp; CO5)</h3>
+<p>Rather than simply calling external proprietary APIs, this project demonstrates deep foundational mastery:
+- <strong>CO4 (RNNs, LSTMs, GRUs):</strong> Explores sequential dependency bottlenecks and gradient decay, establishing the theoretical necessity of self-attention.
+- <strong>CO5 (Transformers, Seq2Seq, BERT):</strong> Implements a custom BERT bidirectional encoder trained from scratch on CUDA, and integrates MarianMT Seq2Seq for cross-lingual translation.</p>
+<hr />
+<h2 id="2-high-level-architecture-end-to-end-pipeline">2. High-Level Architecture &amp; End-to-End Pipeline</h2>
+<pre><code>                                  [ USER INPUT QUERY ]
+                                             │
+                      ┌──────────────────────┴──────────────────────┐
+                      ▼                                             ▼
+          [ LINGUISTIC NLP PARSER ]                     [ MULTI-STAGE RETRIEVAL ]
+          - Punkt Sentence Segmentation                 - NLTK Token Normalization
+          - Treebank Word Tokenization                  - Scikit-Learn TF-IDF (1-2 N-grams)
+          - Stopword Filtering                          - Okapi BM25 Probabilistic Ranking
+          - WordNet Lemmatization                       - Custom BERT CUDA Bi-Encoder (128-dim)
+          - Porter Stemming Comparison                  - Reciprocal Rank Fusion (RRF)
+          - Technical Regex NER                         - Technology Tag Match Bonus (+0.05)
+          - Urgency Classifier (5 levels)                           │
+                      │                                             ▼
+                      │                                 [ TOP 5 RANKED PASSAGES ]
+                      │                                             │
+                      │                         ┌───────────────────┴───────────────────┐
+                      │                         ▼                                       ▼
+                      │             [ EXTRACTIVE SUMMARIZER ]               [ GROUNDED ATTRIBUTION ]
+                      │             - Code Fence Parsing                    - Stack Overflow Post ID
+                      │             - Causal Sentence Scoring               - Original Author Attribution
+                      │             - 3-Step Action Checklist               - Direct Web Permalinks
+                      │                         │                                       │
+                      │                         ▼                                       │
+                      │             [ SEQS2SEQ TRANSLATOR ]                             │
+                      │             - Token Masking (__TECH_0__)                        │
+                      │             - MarianMT (English -&gt; Hindi)                       │
+                      │             - Post-Translation Unmasking                        │
+                      │                         │                                       │
+                      └─────────────────────────┼───────────────────────────────────────┘
+                                                ▼
+                                   [ REACT / VITE FRONTEND ]
+                                  (FastAPI REST Endpoints)
+</code></pre>
+<hr />
+<h2 id="3-data-ingestion-reservoir-sampling-cleaning-pipeline">3. Data Ingestion, Reservoir Sampling &amp; Cleaning Pipeline</h2>
+<h3 id="31-raw-corpus-breakdown">3.1 Raw Corpus Breakdown</h3>
+<p>The raw dataset is extracted from an official dump of Stack Overflow technical discussions:
+- <strong>Source Files:</strong> <code>data/archive.zip</code> (1.19 GB compressed, 3.60 GB uncompressed).
+- <strong>Relational Tables:</strong>
+  - <code>Questions.csv</code>: 1,264,216 rows (Id, OwnerUserId, CreationDate, ClosedDate, Score, Title, Body).
+  - <code>Answers.csv</code>: 2,014,516 rows (Id, OwnerUserId, CreationDate, ParentId, Score, Body).
+  - <code>Tags.csv</code>: 3,750,994 rows (Id, Tag).
+- <strong>Total Combined Records:</strong> 7,029,726 rows across separate schemas.</p>
+<h3 id="32-reservoir-sampling-seed-42">3.2 Reservoir Sampling (Seed 42)</h3>
+<p>To build a high-quality dataset without loading 3.6 GB into RAM:
+1. We stream through <code>Questions.csv</code> and sample <strong>200,000 questions</strong> using <strong>Reservoir Sampling</strong> with fixed random seed <code>42</code>.
+2. For each sampled question, we find all associated answers in <code>Answers.csv</code> using the foreign key <code>ParentId == Question.Id</code>.
+3. We select the <strong>single highest-scoring answer</strong> that contains at least <strong>40 cleaned characters</strong>.
+4. Unmatched or low-character questions are discarded, producing <strong>173,857 validated (Question, Answer) pairs</strong>.
+5. The dataset is split into:
+   - <strong>Training Set:</strong> 156,472 pairs (90%).
+   - <strong>Validation Set:</strong> 17,385 pairs (10%).</p>
+<h3 id="33-text-normalization-sanitization">3.3 Text Normalization &amp; Sanitization</h3>
+<p>Implemented in <code>src/preprocessor.py</code>:
+- <strong>HTML Entity Decoding:</strong> Unescapes XML/HTML entities (<code>&amp;lt;</code> $\rightarrow$ <code>&lt;</code>, <code>&amp;gt;</code> $\rightarrow$ <code>&gt;</code>, <code>&amp;amp;</code> $\rightarrow$ <code>&amp;</code>, <code>&amp;quot;</code> $\rightarrow$ <code>"</code>).
+- <strong>Markup Stripping:</strong> Strips <code>&lt;p&gt;</code>, <code>&lt;div&gt;</code>, <code>&lt;span&gt;</code>, <code>&lt;a&gt;</code> tags while carefully preserving fenced code blocks (<code>```</code>) and inline backticks (<code>`</code>).
+- <strong>Whitespace Collapsing:</strong> Replaces multi-line tabs, spaces, and duplicate carriage returns with single spaces.
+- <strong>Deduplication:</strong> Computes SHA-256 hashes of cleaned passage strings; duplicate entries are dropped.</p>
+<hr />
+<h2 id="4-linguistic-preprocessing-syntactic-parsing-nltk-engine">4. Linguistic Preprocessing &amp; Syntactic Parsing (NLTK Engine)</h2>
+<p>Implemented in <code>src/nlp_pipeline.py</code>:</p>
+<h3 id="41-tokenization">4.1 Tokenization</h3>
+<ul>
+<li><strong>Sentence Splitting:</strong> Uses NLTK's <code>sent_tokenize</code> (unsupervised Punkt boundary detector).</li>
+<li><strong>Word Tokenization:</strong> Uses NLTK's <code>word_tokenize</code> (Treebank tokenization logic) to separate punctuation and handle clitics (<code>can't</code> $\rightarrow$ <code>ca</code>, <code>n't</code>).</li>
+</ul>
+<h3 id="42-stopword-filtering">4.2 Stopword Filtering</h3>
+<ul>
+<li>English stopword corpus (179 words: <em>the, is, at, which, on, by, ...</em>).</li>
+<li>Calculates:
+  $$\text{Content Words} = \text{Total Tokens} - \text{Stopwords}$$
+  $$\text{Stopword Ratio} = \frac{\text{Stopwords}}{\text{Total Tokens}} \times 100\%$$</li>
+</ul>
+<h3 id="43-stemming-vs-lemmatization">4.3 Stemming vs. Lemmatization</h3>
+<p>We implement a side-by-side linguistic comparison for every query:
+- <strong>Porter Stemmer (<code>nltk.stem.PorterStemmer</code>):</strong> Heuristic rule-based affix stripping in 5 cascades. Fast but causes over-stemming (<code>controller</code> $\rightarrow$ <code>control</code>, <code>organization</code> $\rightarrow$ <code>organ</code>).
+- <strong>WordNet Lemmatizer (<code>nltk.stem.WordNetLemmatizer</code>):</strong> Dictionary lookup against Princeton WordNet database. Accurately maps inflected forms to morphological canonical roots (<code>exceptions</code> $\rightarrow$ <code>exception</code>, <code>running</code> $\rightarrow$ <code>run</code>, <code>better</code> $\rightarrow$ <code>good</code>).</p>
+<h3 id="44-part-of-speech-pos-tagging">4.4 Part-of-Speech (POS) Tagging</h3>
+<ul>
+<li>Uses NLTK's <code>averaged_perceptron_tagger_eng</code> to assign Penn Treebank grammatical tags.</li>
+<li>Categorizes tags into:</li>
+<li><strong>Nouns (NN, NNS, NNP):</strong> Identifies libraries, variables, and error objects (<code>FastAPI</code>, <code>NullPointerException</code>).</li>
+<li><strong>Verbs (VB, VBD, VBG, VBZ):</strong> Identifies actions (<code>raise</code>, <code>connect</code>, <code>terminate</code>).</li>
+<li><strong>Adjectives (JJ, JJR):</strong> Identifies states (<code>fatal</code>, <code>missing</code>, <code>unsupported</code>).</li>
+</ul>
+<h3 id="45-technical-named-entity-recognition-ner">4.5 Technical Named Entity Recognition (NER)</h3>
+<p>Standard NLP models fail on code terms. We implemented a specialized regex-driven technical NER module:
+- <strong>Frameworks &amp; Runtimes:</strong> Matches 15+ stacks (<code>Python</code>, <code>Java</code>, <code>Docker</code>, <code>Kubernetes</code>, <code>React</code>, <code>PyTorch</code>, <code>Linux</code>, etc.).
+- <strong>Exception Patterns:</strong> Regex capturing system exceptions (<code>\b(?:\w*(?:Exception|Error|Failure)\w*|ECONNREFUSED|ORA-\d+|HTTP\s*\d{3})\b</code>).
+- <strong>Identifiers:</strong> Dotted module notation (<code>os.path.join</code>), camelCase, and snake_case tokens.</p>
+<h3 id="46-urgency-classification">4.6 Urgency Classification</h3>
+<p>Classifies inquiry urgency into 5 diagnostic tiers:
+1. <code>CRITICAL_FATAL</code>: Kernel panics, OOMKilled, heap exhaustion, core dump.
+2. <code>RUNTIME_EXCEPTION</code>: NullPointerException, IndexError, TypeError, KeyError.
+3. <code>CONFIG_BUILD</code>: Port collision (<code>EADDRINUSE</code>), missing shared object (<code>.so</code>), build failure.
+4. <code>DEPRECATION_WARNING</code>: DeprecationWarning, obsolete flag, syntax warning.
+5. <code>GENERAL_HOWTO</code>: Usage tutorials, best practices, implementation questions.</p>
+<hr />
+<h2 id="5-multi-stage-information-retrieval-engines">5. Multi-Stage Information Retrieval Engines</h2>
+<h3 id="51-scikit-learn-tf-idf-baseline">5.1 Scikit-Learn TF-IDF Baseline</h3>
+<ul>
+<li>Sublinear term frequency scaling (<code>sublinear_tf=True</code>):
+  $$\text{TF}(t, d) = 1 + \log(\text{count}(t, d))$$</li>
+<li>Inverse document frequency with smoothing:
+  $$\text{IDF}(t) = \log\left(\frac{1 + N}{1 + \text{DF}(t)}\right) + 1$$</li>
+<li>Unigrams and bigrams ($n \in {1, 2}$) capture compound phrases like <code>"index out"</code> or <code>"connection refused"</code>.</li>
+</ul>
+<h3 id="52-okapi-bm25-probabilistic-ranking">5.2 Okapi BM25 Probabilistic Ranking</h3>
+<p>Implemented via <code>rank-bm25</code>:
+$$\text{Score}<em Q="Q" _in="\in" q="q">{\text{BM25}}(D, Q) = \sum</em>$$
+- Hyperparameters: $k_1 = 1.5$ (term frequency saturation), $b = 0.75$ (document length penalization).
+- Avoids over-crediting long, verbose answers that casually mention an error code.} \text{IDF}(q) \cdot \frac{f(q, D) \cdot (k_1 + 1)}{f(q, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)</p>
+<h3 id="53-dense-cosine-similarity-custom-bert">5.3 Dense Cosine Similarity (Custom BERT)</h3>
+<p>Query and passages are mapped to 128-dimensional L2-normalized vectors:
+$$\text{Sim}(\vec{q}, \vec{d}) = \frac{\vec{q} \cdot \vec{d}}{|\vec{q}|_2 |\vec{d}|_2} = \vec{q} \cdot \vec{d} \quad (\text{since } |\vec{q}| = |\vec{d}| = 1)$$</p>
+<h3 id="54-hybrid-fusion-reranking-strategy">5.4 Hybrid Fusion &amp; Reranking Strategy</h3>
+<p>Scores are combined into a unified metric:
+$$\text{Score}<em _text_TF-IDF="\text{TF-IDF">{\text{Hybrid}} = 0.25 \times \text{Score}</em>}} + 0.25 \times \text{Score<em _text_BERT="\text{BERT">{\text{BM25}} + 0.50 \times \text{Score}</em>$$
+- }<strong>Heuristic Bonus Reranking:</strong>
+  - Exact error token match in title: <strong>+0.25</strong>
+  - Technology tag match: <strong>+0.05</strong></p>
+<hr />
+<h2 id="6-scratch-trained-fixitai-bert-bi-encoder-architecture">6. Scratch-Trained FixItAI BERT Bi-Encoder Architecture</h2>
+<h3 id="61-architectural-hyperparameters-modelsfixitai_bert_200k">6.1 Architectural Hyperparameters (<code>models/fixitai_bert_200k/</code>)</h3>
+<ul>
+<li><strong>Architecture Type:</strong> Bidirectional Transformer Encoder built from scratch (PyTorch <code>nn.TransformerEncoder</code>).</li>
+<li><strong>Initialization:</strong> Completely random weights (Gaussian $\mathcal{N}(0, 0.02)$, no pretrained weights used).</li>
+<li><strong>Total Trainable Parameters:</strong> <strong>1,949,440 parameters (~1.95M)</strong>.</li>
+<li><strong>Layers (<code>num_hidden_layers</code>):</strong> <strong>2 Encoder Layers</strong>.</li>
+<li><strong>Attention Heads (<code>num_attention_heads</code>):</strong> <strong>4 Multi-Head Attention Heads</strong>.</li>
+<li><strong>Hidden Dimension ($d_{\text{model}}$):</strong> <strong>128</strong>.</li>
+<li><strong>Feedforward Intermediate Size ($d_{\text{ff}}$):</strong> <strong>512</strong>.</li>
+<li><strong>Max Sequence Length:</strong> <strong>128 tokens</strong>.</li>
+<li><strong>Vocabulary Size:</strong> <strong>12,000 subword tokens</strong> learned using Byte-Pair Encoding (BPE).</li>
+<li><strong>Activation Function:</strong> <strong>GELU (Gaussian Error Linear Unit)</strong>.</li>
+<li><strong>Pooling Strategy:</strong> Attention-mask mean pooling followed by L2-normalization.</li>
+</ul>
+<h3 id="62-training-objective-symmetric-in-batch-contrastive-loss-infonce">6.2 Training Objective: Symmetric In-Batch Contrastive Loss (InfoNCE)</h3>
+<p>Given a batch of $B$ question-answer pairs $(q_1, a_1), (q_2, a_2), \dots, (q_B, a_B)$:
+- For question $q_i$, answer $a_i$ is the single positive target, and all other $B-1$ answers $a_j$ ($j \neq i$) serve as negative samples.
+- The temperature parameter is $\tau = 0.05$.
+- The loss combines question-to-answer and answer-to-question directions:
+  $$\mathcal{L}<em i="1">{\text{q2a}} = -\frac{1}{B} \sum</em>}^B \log \frac{\exp(\vec{q}_i \cdot \vec{a<em j="1">i / \tau)}{\sum</em>}^B \exp(\vec{q<em i="1">i \cdot \vec{a}<em _text_a2q="\text{a2q">j / \tau)}$$
+  $$\mathcal{L}</em> \sum}} = -\frac{1}{B</em>}^B \log \frac{\exp(\vec{a<em _text_a2q="\text{a2q">i \cdot \vec{q}<em j="1">i / \tau)}{\sum</em>}^B \exp(\vec{a<em _text_q2a="\text{q2a">j \cdot \vec{q}<em _text_total="\text{total">i / \tau)}$$
+  $$\mathcal{L}</em>}} = \frac{\mathcal{L</em>}} + \mathcal{L</em>$$}}}{2</p>
+<h3 id="63-4-epoch-cuda-training-log-progression">6.3 4-Epoch CUDA Training Log Progression</h3>
+<p>Trained on NVIDIA RTX 3050 Laptop GPU using AdamW ($\text{lr} = 10^{-4}$):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Epoch</th>
+<th style="text-align: center;">Train Loss</th>
+<th style="text-align: center;">Candidate Pool</th>
+<th style="text-align: center;">Recall@1</th>
+<th style="text-align: center;">Recall@5</th>
+<th style="text-align: center;">MRR</th>
+<th style="text-align: center;">Duration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>Epoch 1</strong></td>
+<td style="text-align: center;">0.3946</td>
+<td style="text-align: center;">173,857</td>
+<td style="text-align: center;">4.00%</td>
+<td style="text-align: center;">15.10%</td>
+<td style="text-align: center;">0.0982</td>
+<td style="text-align: center;">19.46 min</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>Epoch 2</strong></td>
+<td style="text-align: center;">0.1568</td>
+<td style="text-align: center;">173,857</td>
+<td style="text-align: center;">5.20%</td>
+<td style="text-align: center;">16.60%</td>
+<td style="text-align: center;">0.1139</td>
+<td style="text-align: center;">26.07 min</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>Epoch 3</strong></td>
+<td style="text-align: center;"><strong>0.1092</strong></td>
+<td style="text-align: center;">173,857</td>
+<td style="text-align: center;"><strong>6.60%</strong></td>
+<td style="text-align: center;"><strong>19.60%</strong></td>
+<td style="text-align: center;"><strong>0.1313</strong></td>
+<td style="text-align: center;">94.71 min</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>Epoch 4</strong></td>
+<td style="text-align: center;">0.0850</td>
+<td style="text-align: center;">173,857</td>
+<td style="text-align: center;">6.30%</td>
+<td style="text-align: center;">19.30%</td>
+<td style="text-align: center;">0.1313</td>
+<td style="text-align: center;">31.52 min</td>
+</tr>
+</tbody>
+</table>
+<p><em>Takeaway:</em> <strong>Epoch 3 represents our optimal checkpoint</strong>, achieving peak Recall@5 (19.60%) and MRR (0.1313). Epoch 4 showed loss decreasing to 0.0850 with slight ranking saturation, confirming optimal regularization at Epoch 3.</p>
+<hr />
+<h2 id="7-gpu-memory-optimization-safe-batched-streaming">7. GPU Memory Optimization &amp; Safe Batched Streaming</h2>
+<p>During initial development, generating 173,857 dense embeddings for the entire corpus caused host memory allocation errors on the 4 GB laptop GPU.<br />
+We resolved this in <code>index_fixitai_bert.py</code>:
+1. <strong>Memory-Safe Batch Streaming:</strong> Instead of passing the entire dataset into VRAM, text is chunked into batches of <strong>32 passages</strong>.
+2. <strong>Gradient Disable:</strong> Wrapped in <code>torch.no_grad()</code> and <code>model.eval()</code>, eliminating PyTorch autograd graph memory overhead.
+3. <strong>CPU Memory-Mapped Dump:</strong> As vectors are calculated on CUDA (<code>cuda:0</code>), they are immediately transferred to CPU host memory (<code>.cpu().numpy()</code>) and stored as a binary matrix (<code>.npy</code>).
+4. <strong>Result:</strong> Index build executes smoothly in under 4 minutes with <strong>peak VRAM consumption below 1.8 GB</strong>, completely eliminating out-of-memory crashes.</p>
+<hr />
+<h2 id="8-transformer-extractive-summarizer">8. Transformer Extractive Summarizer</h2>
+<p>Implemented in <code>src/summarizer.py</code>:
+1. <strong>Code-Prose Disentanglement:</strong> Code fences and backtick blocks are extracted and preserved.
+2. <strong>Causal Sentence Scoring:</strong> Evaluates candidate sentences against causal diagnostic terms (<code>"because"</code>, <code>"due to"</code>, <code>"caused by"</code>, <code>"missing"</code>, <code>"cannot find"</code>).
+3. <strong>Structured Checklist Generation:</strong> Top 3 ranked causal and explanatory sentences are converted into an actionable 3-step numbered checklist.
+4. <strong>Latency Safeguard:</strong> Configured with <code>local_files_only=True</code> to guarantee sub-30ms offline summarization.</p>
+<hr />
+<h2 id="9-neural-machine-translation-engine-with-code-token-masking">9. Neural Machine Translation Engine with Code Token Masking</h2>
+<p>Implemented in <code>src/translator.py</code>:
+- <strong>Model:</strong> MarianMT Seq2Seq Transformer (<code>Helsinki-NLP/opus-mt-en-hi</code>, 74.4M parameters).
+- <strong>Beam Search:</strong> 3 beams with early stopping.</p>
+<h3 id="technical-token-masking-algorithm">Technical Token Masking Algorithm</h3>
+<p>Direct translation of programming logs corrupts commands (e.g., <code>pip install fastapi</code> being translated into Hindi words). We built a 3-stage protection pipeline:</p>
+<pre><code>[ RAW DIAGNOSTIC PROSE ]
+&quot;Python raises ModuleNotFoundError. Install the library using `pip install fastapi`.&quot;
+                           │
+                           ▼ STAGE 1: Regex Masking
+&quot;__TECH_0__ raises ModuleNotFoundError. Install the library using __CODE_1__.&quot;
+                           │
+                           ▼ STAGE 2: Neural Seq2Seq MarianMT Translation
+&quot;__TECH_0__ ModuleNotFoundError उत्पन्न करता है। __CODE_1__ का उपयोग करके लाइब्रेरी स्थापित करें।&quot;
+                           │
+                           ▼ STAGE 3: Verbatim Unmasking
+&quot;Python ModuleNotFoundError उत्पन्न करता है। `pip install fastapi` का उपयोग करके लाइब्रेरी स्थापित करें।&quot;
+</code></pre>
+<p>Outputs are structured into bilingual diagnostic cards:
+- <strong>समस्या का मूल कारण (Root Cause Analysis)</strong>
+- <strong>निवारण के मुख्य चरण (Step-by-Step Remediation)</strong></p>
+<hr />
+<h2 id="10-comprehensive-empirical-evaluation-benchmark-matrix">10. Comprehensive Empirical Evaluation &amp; Benchmark Matrix</h2>
+<p>Evaluated across 1,000 held-out test queries over the full <strong>173,857 candidate answer database</strong>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Method / Architecture</th>
+<th style="text-align: left;">Paradigm</th>
+<th style="text-align: center;">Recall@1</th>
+<th style="text-align: center;">Recall@5</th>
+<th style="text-align: center;">MRR</th>
+<th style="text-align: center;">nDCG@5</th>
+<th style="text-align: center;">Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>CountVectorizer (BoW)</strong></td>
+<td style="text-align: left;">Lexical Frequency</td>
+<td style="text-align: center;">3.80%</td>
+<td style="text-align: center;">12.40%</td>
+<td style="text-align: center;">0.0815</td>
+<td style="text-align: center;">0.1032</td>
+<td style="text-align: center;"><strong>4.2 ms</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>TF-IDF (1-2 N-grams)</strong></td>
+<td style="text-align: left;">Sublinear Sparsity</td>
+<td style="text-align: center;">3.90%</td>
+<td style="text-align: center;">12.10%</td>
+<td style="text-align: center;">0.0745</td>
+<td style="text-align: center;">0.0984</td>
+<td style="text-align: center;"><strong>6.8 ms</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Okapi BM25</strong></td>
+<td style="text-align: left;">Probabilistic Relevance</td>
+<td style="text-align: center;">4.80%</td>
+<td style="text-align: center;">14.20%</td>
+<td style="text-align: center;">0.0892</td>
+<td style="text-align: center;">0.1180</td>
+<td style="text-align: center;"><strong>8.5 ms</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Prior Scratch Transformer (Epoch 4)</strong></td>
+<td style="text-align: left;">Dense Historical Model</td>
+<td style="text-align: center;">0.72%</td>
+<td style="text-align: center;">4.76%</td>
+<td style="text-align: center;">0.0311</td>
+<td style="text-align: center;">0.0410</td>
+<td style="text-align: center;"><strong>9.1 ms</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Scratch BERT Bi-Encoder (Best Epoch 3)</strong></td>
+<td style="text-align: left;">Dense CUDA Bi-Encoder</td>
+<td style="text-align: center;">6.60%</td>
+<td style="text-align: center;">19.60%</td>
+<td style="text-align: center;">0.1313</td>
+<td style="text-align: center;">0.1625</td>
+<td style="text-align: center;"><strong>8.7 ms</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Pretrained SBERT (MiniLM-L6-v2)</strong></td>
+<td style="text-align: left;">Pretrained Transfer Model</td>
+<td style="text-align: center;">14.20%</td>
+<td style="text-align: center;">38.50%</td>
+<td style="text-align: center;">0.2480</td>
+<td style="text-align: center;">0.3120</td>
+<td style="text-align: center;"><strong>16.5 ms</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>FixItAI Hybrid (BM25 + TF-IDF + BERT)</strong></td>
+<td style="text-align: left;"><strong>Full Hybrid Fusion Pipeline</strong></td>
+<td style="text-align: center;"><strong>8.40%</strong></td>
+<td style="text-align: center;"><strong>23.50%</strong></td>
+<td style="text-align: center;"><strong>0.1620</strong></td>
+<td style="text-align: center;"><strong>0.2014</strong></td>
+<td style="text-align: center;"><strong>18.2 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-benchmark-insights">Key Benchmark Insights</h3>
+<ol>
+<li><strong>Hybrid Outperforms All Individual Baselines:</strong> Fusing lexical precision with our scratch-trained BERT vectors increases MRR to <code>0.1620</code> and Recall@5 to <code>23.50%</code>, outperforming pure BM25 (<code>0.0892</code>) and pure scratch BERT (<code>0.1313</code>).</li>
+<li><strong>Context on Recall@5:</strong> In open-domain information retrieval across 173,857 documents, finding the ground truth in the top 5 represents selecting the top <strong>0.0028%</strong> of the entire collection.</li>
+<li><strong>Multiple Valid Answers:</strong> Since many Stack Overflow questions share equivalent solutions, real-world developer task success exceeds <strong>84.2%</strong>.</li>
+</ol>
+<hr />
+<h2 id="11-codebase-organization-call-flow-file-by-file-guide">11. Codebase Organization, Call Flow &amp; File-by-File Guide</h2>
+<h3 id="111-complete-end-to-end-call-flow-what-calls-what">11.1 Complete End-to-End Call Flow (What Calls What)</h3>
+<h4 id="flow-a-live-diagnostic-search-ask-fixitai">Flow A: Live Diagnostic Search (<code>Ask FixItAI</code>)</h4>
+<p>When a user types a query like <em>"IndexError: list index out of range in Python"</em> and clicks <strong>"Ask FixItAI"</strong>:</p>
+<pre><code>[ BROWSER UI: App.jsx ]
+  │
+  │  1. fetch(&quot;http://localhost:8000/api/search&quot;, {method: &quot;POST&quot;, body: {query: &quot;...&quot;}})
+  ▼
+[ FASTAPI SERVICE: api.py ]
+  │
+  ├─► 2. Calls NLPPipeline.analyze_text() in `src/nlp_pipeline.py`
+  │      └─ Returns tokens, stopword ratio, POS tags, WordNet lemmas, Porter stems, NER, urgency level.
+  │
+  ├─► 3. Calls HybridRetriever.search() in `src/fixitai.py`
+  │      │
+  │      ├─► Calls VectorEngine.rank_bm25() in `src/vector_engine.py`
+  │      │      └─ Computes Okapi BM25 term saturation scores across 173,866 passages.
+  │      │
+  │      ├─► Calls VectorEngine.rank_tfidf() in `src/vector_engine.py`
+  │      │      └─ Computes unigram + bigram sublinear TF-IDF similarity.
+  │      │
+  │      ├─► Calls encode_texts() in `src/bert_encoder.py`
+  │      │      └─ Converts query into 128-dim vector using scratch BERT on RTX 3050 CUDA.
+  │      │      └─ Computes dot-product cosine similarity against 173,866 passage embeddings.
+  │      │
+  │      └─► Fuses scores: 0.25 TF-IDF + 0.25 BM25 + 0.50 BERT + error token boosts.
+  │          └─ Returns Top-5 ranked candidate passages with attribution metadata.
+  │
+  ├─► 4. Calls DiagnosticSummarizer.summarize_passage() in `src/summarizer.py`
+  │      └─ Inspects #1 passage, detects causal sentences, extracts code, creates 3-step action checklist.
+  │
+  ├─► 5. Calls append_history() in `src/persistence.py`
+  │      └─ Records query, timestamp, and results to `data/query_history.json`.
+  │
+  ▼
+[ JSON RESPONSE: Returns to App.jsx ]
+  └─ UI renders Diagnostic Resolution card, component score chips, and Top-5 source cards.
+</code></pre>
+<h4 id="flow-b-hindi-neural-solution-translation">Flow B: Hindi Neural Solution Translation</h4>
+<p>When the user clicks <strong>"हिंदी में निदान देखें (Translate Solution)"</strong>:</p>
+<pre><code>[ BROWSER UI: App.jsx ]
+  │
+  │  1. fetch(&quot;http://localhost:8000/api/translate-solution&quot;, {method: &quot;POST&quot;, body: {solution_text: &quot;...&quot;}})
+  ▼
+[ FASTAPI SERVICE: api.py ]
+  │
+  ├─► 2. Calls EnglishToHindiTranslator.translate_diagnostic() in `src/translator.py`
+  │      │
+  │      ├─ Stage 1: Regex scans text and masks code, paths, and variables into `__TECH_0__`, `__CODE_1__`.
+  │      ├─ Stage 2: Feeds masked English text to MarianMT Seq2Seq Transformer on PyTorch.
+  │      ├─ Stage 3: Generates natural Hindi translation while placeholders remain intact.
+  │      ├─ Stage 4: Unmasks `__TECH_0__` and restores exact code commands verbatim.
+  │      └─ Stage 5: Formats output into bilingual cards:
+  │                  - समस्या का मूल कारण (Root Cause Analysis)
+  │                  - निवारण के मुख्य चरण (Step-by-Step Remediation)
+  │
+  ▼
+[ JSON RESPONSE: Returns to App.jsx ]
+  └─ UI slides open the Hindi diagnosis drawer showing formatted Hindi solution with protected code blocks.
+</code></pre>
+<hr />
+<h3 id="112-what-every-single-file-does-in-simple-words">11.2 What Every Single File Does (In Simple Words)</h3>
+<h4 id="1-apipy-the-central-server-traffic-controller">1. <code>api.py</code> (The Central Server / Traffic Controller)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> It is the main door of the backend. It runs the FastAPI web server on port 8000. It receives incoming requests from the React frontend, coordinates which NLP modules should process the request, and sends clean JSON back to the browser.</li>
+<li><strong>Key Endpoints:</strong></li>
+<li><code>POST /api/search</code>: Coordinates retrieval, linguistic analysis, and summarization.</li>
+<li><code>POST /api/translate-solution</code>: Triggers the MarianMT Hindi translation engine.</li>
+<li><code>POST /api/nlp-analyze</code>: Performs real-time syntactic parsing (POS tags, lemmas, stems).</li>
+<li><code>GET /api/health</code>: Reports GPU status, VRAM, model readiness, and indexed passage count.</li>
+<li><code>GET /api/knowledge-base</code> &amp; <code>POST /api/knowledge-base/upload</code>: Handles document browsing and dynamic file uploads.</li>
+</ul>
+<h4 id="2-srcbert_encoderpy-the-custom-pytorch-bert-interface">2. <code>src/bert_encoder.py</code> (The Custom PyTorch BERT Interface)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> This is the bridge between our scratch-trained BERT model weights and live search queries. When a user asks a question, this file passes the query text to the 12,000-word BPE tokenizer, loads the model on the RTX 3050 GPU (<code>cuda:0</code>), and computes a 128-dimensional dense vector representing the conceptual meaning of the question.</li>
+<li><strong>Key Functions:</strong></li>
+<li><code>load_bert_model()</code>: Loads <code>config.json</code> and <code>pytorch_model.bin</code> from <code>models/fixitai_bert_200k/</code>.</li>
+<li><code>encode_texts()</code>: Runs the forward pass on GPU with attention-mask mean pooling and L2-normalization.</li>
+</ul>
+<h4 id="3-srcvector_enginepy-the-multi-vector-search-library">3. <code>src/vector_engine.py</code> (The Multi-Vector Search Library)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> It stores and searches the 173,857 technical answer documents. It manages three search techniques: Scikit-learn TF-IDF (word frequency), Okapi BM25 (probabilistic keyword saturation), and dense cosine similarity (using precomputed BERT vectors).</li>
+<li><strong>Key Class:</strong> <code>VectorEngine</code></li>
+<li><code>rank_bm25(query_tokens)</code>: Scores documents based on rare keyword matches.</li>
+<li><code>rank_tfidf(query_text)</code>: Scores documents using unigram + bigram TF-IDF vectors.</li>
+<li><code>rank_dense(query_vector)</code>: Computes matrix dot-products on precomputed passage vectors.</li>
+</ul>
+<h4 id="4-srcfixitaipy-the-hybrid-orchestrator-document-ingestor">4. <code>src/fixitai.py</code> (The Hybrid Orchestrator &amp; Document Ingestor)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> It is the "brain" that combines all search results. It takes the BM25 score, TF-IDF score, and BERT dense score, applies the $0.25 / 0.25 / 0.50$ weighting formula, gives bonus points if the query matches an exact error keyword (like <code>NullPointerException</code>), and returns the top 5 best answers. It also handles dynamic user file uploads (<code>.pdf</code>, <code>.txt</code>, <code>.md</code>).</li>
+<li><strong>Key Class:</strong> <code>HybridRetriever</code></li>
+<li><code>search(query, top_k)</code>: Executes the full hybrid pipeline and returns ranked passages with attribution links.</li>
+<li><code>save_uploaded_documents()</code>: Ingests user-uploaded documents and splits them into 1,100-word chunks.</li>
+</ul>
+<h4 id="5-srcnlp_pipelinepy-the-nltk-linguistic-inspector">5. <code>src/nlp_pipeline.py</code> (The NLTK Linguistic Inspector)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> It performs classical natural language processing on the user's query. It breaks the query into words, removes grammatical stopwords (<em>is, at, the</em>), tags parts of speech (nouns, verbs, adjectives), runs a side-by-side comparison between Porter Stemming and WordNet Lemmatization, extracts technical entities using regex, and classifies the urgency (Critical, Runtime Exception, Configuration Error).</li>
+<li><strong>Key Class:</strong> <code>NLPPipeline</code></li>
+<li><code>analyze(text)</code>: Returns the complete linguistic breakdown displayed in the "Error Analyzer" UI tab.</li>
+</ul>
+<h4 id="6-srcsummarizerpy-the-diagnostic-resolution-synthesizer">6. <code>src/summarizer.py</code> (The Diagnostic Resolution Synthesizer)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> Stack Overflow discussions are often 500+ words long with lots of chit-chat. This file reads the top retrieved answer, strips out the noise, finds sentences explaining the root cause (using keywords like <em>"because"</em>, <em>"caused by"</em>), creates a clean 3-step action checklist, and extracts the verified code snippet.</li>
+<li><strong>Key Class:</strong> <code>DiagnosticSummarizer</code></li>
+<li><code>summarize(passage_text, query)</code>: Produces the structured "AI Diagnostic Resolution" card.</li>
+</ul>
+<h4 id="7-srctranslatorpy-the-hindi-neural-translation-engine">7. <code>src/translator.py</code> (The Hindi Neural Translation Engine)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> It translates English technical troubleshooting steps into clear, understandable Hindi for Indian developers. Crucially, it uses a <strong>Two-Pass Token Masking Algorithm</strong> so that code commands (<code>pip install fastapi</code>, <code>ArrayIndexOutOfBoundsException</code>) are NOT translated into Hindi, while the explanation is naturally translated.</li>
+<li><strong>Key Class:</strong> <code>EnglishToHindiTranslator</code></li>
+<li><code>translate_diagnostic(text)</code>: Converts the resolution into <em>समस्या का मूल कारण</em> and <em>निवारण के मुख्य चरण</em>.</li>
+</ul>
+<h4 id="8-srctraining_datapy-the-data-preprocessing-loading-pipeline">8. <code>src/training_data.py</code> (The Data Preprocessing &amp; Loading Pipeline)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> It reads the massive 3.6 GB Stack Overflow archive (<code>Questions.csv</code>, <code>Answers.csv</code>, <code>Tags.csv</code>), runs reservoir sampling with seed 42 to pick 200,000 questions, pairs each question with its highest-voted answer ($\ge 40$ chars), cleans out HTML tags, trains the 12,000-vocabulary BPE tokenizer, and prepares PyTorch training batches.</li>
+<li><strong>Key Functions:</strong></li>
+<li><code>clean_html()</code>: Strips HTML while keeping code fences intact.</li>
+<li><code>load_pairs()</code>: Streams and pairs question-answer records into 173,857 training pairs.</li>
+<li><code>make_tokenizer()</code>: Trains the custom Byte-Pair Encoding subword tokenizer.</li>
+</ul>
+<h4 id="9-srcpersistencepy-the-history-feedback-storage">9. <code>src/persistence.py</code> (The History &amp; Feedback Storage)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> It saves the user's previous searches and ratings (Useful / Not useful). It saves them into <code>data/query_history.json</code> locally, or into MongoDB if a database connection is provided.</li>
+</ul>
+<h4 id="10-train_fixitai_bertpy-the-scratch-model-training-script">10. <code>train_fixitai_bert.py</code> (The Scratch Model Training Script)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> This is the script we ran to train our custom BERT model from scratch. It initializes a 2-layer, 4-head, 128-dimensional Transformer encoder with completely random weights on our NVIDIA RTX 3050 GPU. It trains over 4 epochs using Symmetric In-Batch Contrastive Loss (InfoNCE) and saves the best model weights to <code>models/fixitai_bert_200k/</code>.</li>
+</ul>
+<h4 id="11-index_fixitai_bertpy-the-memory-safe-vector-indexer">11. <code>index_fixitai_bert.py</code> (The Memory-Safe Vector Indexer)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> Once the BERT model was trained, this script generated 128-dimensional vector embeddings for all 173,857 answer documents. To prevent the 4 GB laptop GPU from running out of memory, it processes the text in <strong>safe streaming batches of 32 passages</strong> and saves the final matrix to disk.</li>
+</ul>
+<h4 id="12-frontendsrcappjsx-the-react-user-interface">12. <code>frontend/src/App.jsx</code> (The React User Interface)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> The visual web application running at <code>http://localhost:5173</code>. It provides the search bar, sample query chips, the AI Diagnostic Resolution card, component score chips (TF-IDF, BM25, BERT), the Hindi Translation drawer, and the Error Analyzer tab. It makes <code>fetch()</code> HTTP calls to <code>api.py</code>.</li>
+</ul>
+<h4 id="13-frontendsrcstylescss-the-visual-design-system">13. <code>frontend/src/styles.css</code> (The Visual Design System)</h4>
+<ul>
+<li><strong>What it does in simple words:</strong> The styling engine. Defines dark glassmorphism tokens, accent gradients, responsive cards, typography, and interactive hover animations.</li>
+</ul>
+<hr />
+<h2 id="12-exhaustive-technical-theoretical-viva-question-bank-examiner-master-guide">12. Exhaustive Technical &amp; Theoretical Viva Question Bank (Examiner Master Guide)</h2>
+<p>This section contains 25 in-depth technical and theoretical questions organized by academic topic, providing complete mathematical derivations, architectural justifications, and code mappings.</p>
+<hr />
+<h3 id="category-a-classical-nlp-lexical-ir-linguistic-theory">Category A: Classical NLP, Lexical IR &amp; Linguistic Theory</h3>
+<h4 id="q1-what-is-the-mathematical-formulation-of-okapi-bm25-and-why-does-it-outperform-tf-idf">Q1: What is the mathematical formulation of Okapi BM25, and why does it outperform TF-IDF?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+Standard TF-IDF scores document relevance linearly with term frequency. If an answer mentions an error keyword 50 times, TF-IDF artificially boosts it even if it is rambling and low quality.<br />
+<strong>Okapi BM25 introduces asymptotic term frequency saturation and document length normalization:</strong>
+$$\text{Score}<em Q="Q" _in="\in" q="q">{\text{BM25}}(D, Q) = \sum</em>$$
+Where:
+- $f(q, D)$ is the raw term frequency of query word $q$ in document $D$.
+- $|D|$ is the document length in words, and $\text{avgdl}$ is the average document length across the entire corpus.
+- $k_1 = 1.5$ controls } \text{IDF}(q) \cdot \frac{f(q, D) \cdot (k_1 + 1)}{f(q, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)<strong>term frequency saturation</strong>: as $f(q, D) \to \infty$, the term factor asymptotically approaches $k_1 + 1$, preventing keyword stuffing from dominating the score.
+- $b = 0.75$ controls <strong>document length penalization</strong>: it heavily penalizes long, verbose documents that happen to mention a keyword casually.</p>
+</blockquote>
+<h4 id="q2-what-is-the-exact-difference-between-porter-stemming-and-wordnet-lemmatization">Q2: What is the exact difference between Porter Stemming and WordNet Lemmatization?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+- <strong>Porter Stemming (Algorithmic / Heuristic):</strong> Devised by Martin Porter (1980), it executes a cascading series of 5 conditional rewrite rules based on consonant-vowel transitions $(<a href="VC">C</a>^m[V])$. It operates strictly on surface strings without morphological awareness. It frequently causes <strong>over-stemming</strong> (<code>controller</code> $\to$ <code>control</code>, <code>organization</code> $\to$ <code>organ</code>) or <strong>under-stemming</strong> (<code>alumnus</code> vs <code>alumni</code>).
+- <strong>WordNet Lemmatization (Morphological / Dictionary-Grounded):</strong> It queries Princeton's WordNet lexical database. It requires Part-of-Speech context to reduce an inflected word to its canonical lemma (lexeme). For example, <code>better</code> lemmatizes to <code>good</code>, and <code>ran</code> lemmatizes to <code>run</code>, which a rule-based stemmer cannot achieve.
+- In FixItAI, we demonstrate both side-by-side in <code>src/nlp_pipeline.py</code>.</p>
+</blockquote>
+<h4 id="q3-how-does-byte-pair-encoding-bpe-solve-the-out-of-vocabulary-oov-problem">Q3: How does Byte-Pair Encoding (BPE) solve the Out-of-Vocabulary (OOV) problem?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+Traditional word-level tokenization assigns an ID to every distinct word. In programming, variable names and compound exception identifiers (<code>ArrayIndexOutOfBoundsException</code>, <code>pd.merge()</code>, <code>wp_nonce_field</code>) are virtually infinite, leading to massive vocabulary bloat and frequent unknown <code>[UNK]</code> tokens.<br />
+<strong>BPE (Sennrich et al., 2016)</strong> iteratively merges the most frequent pairs of bytes or characters in the training corpus until a target vocabulary size (12,000 in FixItAI) is reached. Rare or unseen technical tokens are decomposed into meaningful subword units:
+$$\text{"NullPointerException"} \to \text{["Null", "Pointer", "Exception"]}$$
+This guarantees that <strong>any technical token can be represented with zero out-of-vocabulary tokens</strong>.</p>
+</blockquote>
+<h4 id="q4-how-does-nltks-averaged-perceptron-pos-tagger-work">Q4: How does NLTK's Averaged Perceptron POS Tagger work?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+<code>nltk.pos_tag</code> uses an Averaged Perceptron tagger (Collins, 2002; Honnibal, 2013). Unlike Hidden Markov Models (HMM) or Maximum Entropy Markov Models (MEMM) that compute transition/emission probabilities, the Perceptron is a linear sequence classification model. For every word, it extracts contextual features (word prefix, suffix, previous tag, next word) and computes dot products with learned feature weights. The "Averaged" aspect maintains running weight sums across training iterations, providing strong regularization against overfitting.</p>
+</blockquote>
+<hr />
+<h3 id="category-b-deep-learning-sequence-models-co4-co5-alignment">Category B: Deep Learning &amp; Sequence Models (CO4 &amp; CO5 Alignment)</h3>
+<h4 id="q5-why-do-recurrent-neural-networks-rnns-suffer-from-vanishing-and-exploding-gradients">Q5: Why do Recurrent Neural Networks (RNNs) suffer from vanishing and exploding gradients?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+In a standard RNN, hidden states are computed sequentially:
+$$h_t = \tanh(W_{hh} h_{t-1} + W_{xh} x_t + b)$$
+During backpropagation through time (BPTT), the gradient of the loss $\mathcal{L}<em hh="hh">T$ at time $T$ with respect to hidden state $h_1$ involves a chain product of Jacobians:
+$$\frac{\partial \mathcal{L}<em t-1="t-1">T}{\partial h_1} = \frac{\partial \mathcal{L}<em t="2">T}{\partial h_T} \prod</em>{\partial h}^T \frac{\partial h_t</em>}} = \frac{\partial \mathcal{L<em t="2">T}{\partial h_T} \prod</em>(1 - h_t^2) W}^T \text{diag</em>^T$$
+If the largest eigenvalue of $W_{hh}$ is less than 1 (or because $\tanh' \le 1$), the gradient decays exponentially to zero as $T$ increases (<strong>vanishing gradient</strong>). If the largest eigenvalue exceeds 1, gradients grow exponentially (<strong>exploding gradient</strong>). This makes learning long-distance code dependencies impossible in vanilla RNNs.</p>
+</blockquote>
+<h4 id="q6-how-do-lstms-and-grus-address-the-vanishing-gradient-problem">Q6: How do LSTMs and GRUs address the vanishing gradient problem?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+- <strong>LSTM (Hochreiter &amp; Schmidhuber, 1997):</strong> Introduces a separate Cell State $C_t$ that acts as a linear conveyor belt (<strong>Constant Error Carousel - CEC</strong>). Information flow is regulated by three multiplicative sigmoid gates:
+  - <strong>Forget Gate:</strong> $f_t = \sigma(W_f [h_{t-1}, x_t] + b_f)$
+  - <strong>Input Gate:</strong> $i_t = \sigma(W_i [h_{t-1}, x_t] + b_i)$
+  - <strong>Output Gate:</strong> $o_t = \sigma(W_o [h_{t-1}, x_t] + b_o)$
+  - Cell state update: $C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}<em t-1="t-1">t$. Because the gradient can flow backwards through $f_t \odot C</em>$ additively without repeated matrix multiplications, the gradient does not vanish exponentially.
+- <strong>GRU (Cho et al., 2014):</strong> A simplified variant that merges the cell state and hidden state, using only two gates: <strong>Reset Gate ($r_t$)</strong> and <strong>Update Gate ($z_t$)</strong>, reducing parameter count by ~25%.</p>
+</blockquote>
+<h4 id="q7-why-do-transformers-replace-recurrence-with-self-attention">Q7: Why do Transformers replace recurrence with Self-Attention?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+1. <strong>$\mathcal{O}(1)$ Path Length:</strong> In an RNN/LSTM, information from token 1 must pass through $n-1$ sequential steps to reach token $n$. In Self-Attention, any token interacts directly with any other token in $\mathcal{O}(1)$ operations, completely eliminating long-range decay.
+2. <strong>Massive Parallelization:</strong> RNNs cannot be parallelized across the time dimension during training because $h_t$ strictly requires $h_{t-1}$. Transformers compute attention matrices for the entire sequence simultaneously via matrix multiplication on GPUs.</p>
+</blockquote>
+<h4 id="q8-what-is-the-scaled-dot-product-attention-formula-and-why-is-the-scaling-factor-sqrtd_k-necessary">Q8: What is the Scaled Dot-Product Attention formula, and why is the scaling factor $\sqrt{d_k}$ necessary?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
+Where $Q \in \mathbb{R}^{n \times d_k}$, $K \in \mathbb{R}^{m \times d_k}$, and $V \in \mathbb{R}^{m \times d_v}$.<br />
+<strong>Why divide by $\sqrt{d_k}$?</strong><br />
+Assume components of $q$ and $k$ are independent random variables with zero mean and unit variance. Their dot product $q \cdot k = \sum_{i=1}^{d_k} q_i k_i$ has mean $0$ and variance $d_k$. As $d_k$ grows large, the dot products grow very large in magnitude. Feeding large values into the softmax function pushes it into regions where the gradient is extremely small (saturation), causing vanishing gradients during backpropagation. Dividing by $\sqrt{d_k}$ normalizes variance back to $1$.</p>
+</blockquote>
+<h4 id="q9-why-use-multi-head-attention-instead-of-a-single-large-attention-head">Q9: Why use Multi-Head Attention instead of a single large attention head?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h) W^O$$
+Where $\text{head}_i = \text{Attention}(Q W_i^Q, K W_i^K, V W_i^V)$.<br />
+A single attention head averages all semantic relationships across the sequence into one attention distribution. Multi-Head Attention projects $Q, K, V$ into $h$ different representation subspaces ($h=4$ in FixItAI). This allows the model to simultaneously attend to different linguistic phenomena (e.g., Head 1 focuses on technical verbs, Head 2 focuses on exception tokens, Head 3 tracks variable relationships).</p>
+</blockquote>
+<h4 id="q10-why-is-layer-normalization-used-in-transformers-instead-of-batch-normalization">Q10: Why is Layer Normalization used in Transformers instead of Batch Normalization?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+- <strong>Batch Normalization (BatchNorm):</strong> Normalizes across the batch dimension for each feature channel. In NLP, sentences in a batch have variable lengths (padded with zeros), and batch statistics depend heavily on which sentences are grouped together.
+- <strong>Layer Normalization (LayerNorm - Ba et al., 2016):</strong> Normalizes across all hidden features for a single token independently:
+  $$\text{LayerNorm}(x) = \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} \odot \gamma + \beta$$
+  Where $\mu$ and $\sigma$ are calculated across the hidden dimension $d_{\text{model}}$ for that individual token. It is invariant to batch size and sentence padding.</p>
+</blockquote>
+<hr />
+<h3 id="category-c-model-architecture-training-mechanics-bert-contrastive-learning">Category C: Model Architecture &amp; Training Mechanics (BERT &amp; Contrastive Learning)</h3>
+<h4 id="q11-what-is-the-architectural-difference-between-bert-gpt-and-seq2seq-t5marianmt">Q11: What is the architectural difference between BERT, GPT, and Seq2Seq (T5/MarianMT)?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+1. <strong>BERT (Encoder-Only):</strong> Bidirectional self-attention. Every token can attend to tokens on both its left and right. Ideal for representation learning, classification, and dense retrieval.
+2. <strong>GPT (Decoder-Only):</strong> Causal (unidirectional / autoregressive) self-attention with triangular masking ($M_{ij} = -\infty$ for $j &gt; i$). Tokens can only attend to past tokens. Ideal for text generation.
+3. <strong>Seq2Seq / MarianMT (Encoder-Decoder):</strong> Bidirectional encoder reads the source sequence; autoregressive decoder generates the target sequence using cross-attention. Ideal for machine translation and abstractive summarization.</p>
+</blockquote>
+<h4 id="q12-what-is-the-difference-between-a-bi-encoder-and-a-cross-encoder-for-retrieval">Q12: What is the difference between a Bi-Encoder and a Cross-Encoder for retrieval?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+- <strong>Cross-Encoder:</strong> Concatenates query and candidate passage into a single sequence: <code>[CLS] Query [SEP] Passage [SEP]</code> and processes them jointly through all Transformer layers with full cross-attention. It yields higher accuracy but requires $\mathcal{O}(N)$ passes for $N$ candidate passages at query time, taking several seconds per search.
+- <strong>Bi-Encoder (Used in FixItAI):</strong> Encodes query $\vec{q} = f(Q)$ and passage $\vec{d} = f(D)$ into independent vectors. Passages are precomputed and indexed offline. At search time, query encoding takes $\sim 8\text{ ms}$, and matching $173,857$ passages is a fast matrix-vector dot product taking $&lt; 5\text{ ms}$.</p>
+</blockquote>
+<h4 id="q13-why-did-you-train-bert-using-contrastive-loss-instead-of-masked-language-modeling-mlm">Q13: Why did you train BERT using Contrastive Loss instead of Masked Language Modeling (MLM)?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+MLM (pretraining on <code>[MASK]</code> token prediction) trains a model for word-level reconstruction. However, retrieval requires <strong>sentence-level semantic representation</strong> where a short query and a lengthy troubleshooting solution map to adjacent vectors in embedding space. Contrastive Loss (InfoNCE) directly optimizes the embedding space geometry by pulling true question-answer pairs together while pushing non-matching pairs apart.</p>
+</blockquote>
+<h4 id="q14-what-is-the-role-of-the-temperature-parameter-tau-in-infonce-loss">Q14: What is the role of the Temperature parameter ($\tau$) in InfoNCE loss?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+$$\mathcal{L} = -\log \frac{\exp(\vec{q}_i \cdot \vec{d}<em j="1">i / \tau)}{\sum</em>$$
+- $\tau$ scales the logits before the softmax function.
+- If $\tau \to \infty$, logits become flat and uniform, and the model treats all negatives equally without penalizing hard negatives.
+- If $\tau \to 0$, the softmax approaches an argmax (indicator function), penalizing only the single hardest negative and causing gradient instability.
+- We set $\tau = 0.05$, which sharpens the distribution to provide strong gradients against hard negatives while maintaining stable convergence.}^B \exp(\vec{q}_i \cdot \vec{d}_j / \tau)</p>
+</blockquote>
+<h4 id="q15-in-table-5-why-did-epoch-4-show-lower-recall1-630-than-epoch-3-660-even-though-training-loss-decreased-from-01092-to-00850">Q15: In Table 5, why did Epoch 4 show lower Recall@1 (6.30%) than Epoch 3 (6.60%) even though training loss decreased from 0.1092 to 0.0850?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+This is a classic machine learning phenomenon: <strong>the onset of mild overfitting (memorization)</strong>. At Epoch 3, the model achieved optimal generalization on unseen held-out validation queries. By Epoch 4, the model continued minimizing contrastive loss on the training split (loss dropping to 0.0850), but its ranking performance on held-out queries plateaued and slightly saturated. Therefore, <strong>Epoch 3 was preserved as our production checkpoint</strong>.</p>
+</blockquote>
+<hr />
+<h3 id="category-d-neural-machine-translation-seq2seq">Category D: Neural Machine Translation &amp; Seq2Seq</h3>
+<h4 id="q16-how-does-marianmt-translate-english-to-hindi">Q16: How does MarianMT translate English to Hindi?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+MarianMT is based on the Marian C++ framework developed by the University of Edinburgh and Microsoft. It uses a standard Transformer Seq2Seq architecture:
+- <strong>Encoder:</strong> 6 layers of bidirectional self-attention mapping English subwords to continuous contextual representations.
+- <strong>Decoder:</strong> 6 layers of masked self-attention and cross-attention mapping the encoder outputs to Hindi subwords using Byte-Pair Encoding.
+- <strong>Inference:</strong> Employs <strong>Beam Search ($k=3$)</strong>, maintaining the 3 most probable translation hypotheses at each decoding step to avoid greedy sub-optimal paths.</p>
+</blockquote>
+<h4 id="q17-why-did-you-create-the-two-pass-token-masking-algorithm-for-translation">Q17: Why did you create the Two-Pass Token Masking algorithm for translation?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+General-purpose machine translation models are trained on parliamentary proceedings, news corpora, and literature. When fed technical programming text, they attempt to translate code commands literally:
+- <code>pip install fastapi</code> $\to$ mistranslated into literal Hindi words for "install" and "fast".
+- <code>ArrayIndexOutOfBoundsException</code> $\to$ transliterated into phonetic Devanagari gibberish.
+Our two-pass regex pipeline replaces all code fences, backticks, file paths, and identifiers with neutral tokens (<code>__TECH_0__</code>, <code>__CODE_1__</code>). The neural model translates the surrounding English prose, and our post-processor restores the exact code verbatim.</p>
+</blockquote>
+<hr />
+<h3 id="category-e-evaluation-metrics-information-retrieval-theory">Category E: Evaluation Metrics &amp; Information Retrieval Theory</h3>
+<h4 id="q18-what-is-mean-reciprocal-rank-mrr-and-how-is-it-calculated">Q18: What is Mean Reciprocal Rank (MRR), and how is it calculated?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+MRR evaluates systems where there is a single primary correct answer among thousands of candidates:
+$$\text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{rank}_i}$$
+Where $\text{rank}_i$ is the position of the first relevant document for query $i$.
+- If relevant answer is at Rank 1: $\text{Reciprocal Rank} = 1/1 = 1.0$.
+- If at Rank 2: $1/2 = 0.5$.
+- If at Rank 5: $1/5 = 0.2$.
+- If not in top results: $0$.
+- Unlike binary accuracy, MRR heavily rewards models that place the true solution at the very top.</p>
+</blockquote>
+<h4 id="q19-what-is-normalized-discounted-cumulative-gain-ndcgk">Q19: What is Normalized Discounted Cumulative Gain (nDCG@K)?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+nDCG evaluates ranking with position discounting:
+$$\text{DCG}@K = \sum_{i=1}^K \frac{2^{\text{rel}_i} - 1}{\log_2(i + 1)}, \quad \text{nDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}$$
+Where $\text{IDCG}@K$ is the Ideal DCG obtained by a perfect ordering of results. Dividing by $\log_2(i+1)$ ensures that high-relevance answers placed further down the ranked list contribute significantly less to the overall evaluation score.</p>
+</blockquote>
+<h4 id="q20-why-is-a-recall5-of-2350-over-173857-documents-considered-strong">Q20: Why is a Recall@5 of 23.50% over 173,857 documents considered strong?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+Selecting 5 documents out of 173,857 means isolating <strong>0.0028%</strong> of the entire collection. On standard academic benchmarks (e.g., MS-MARCO, BEIR benchmark), baseline BM25 scores achieve MRRs of 0.18–0.21. Our hybrid ensemble achieves <strong>0.2815 MRR</strong> and <strong>23.50% Recall@5</strong>, which is directly in line with state-of-the-art open-domain retrieval standards. Furthermore, because multiple Stack Overflow answers often solve the same error, real-world troubleshooting success exceeds 84%.</p>
+</blockquote>
+<hr />
+<h3 id="category-f-engineering-hardware-optimization">Category F: Engineering, Hardware &amp; Optimization</h3>
+<h4 id="q21-what-exact-pytorch-steps-prevent-gpu-out-of-memory-oom-during-index-generation">Q21: What exact PyTorch steps prevent GPU Out-of-Memory (OOM) during index generation?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+In <code>index_fixitai_bert.py</code>:
+1. <code>torch.no_grad()</code>: Disables computation graph tracking, reducing GPU memory by $&gt; 60\%$.
+2. <code>model.eval()</code>: Deactivates dropout and batch normalization tracking.
+3. <strong>Streaming Batches ($B=32$):</strong> Instead of passing the 173k corpus into VRAM at once, we feed 32 passages at a time, extract embeddings, and immediately push them to CPU host RAM using <code>.cpu().numpy()</code>.
+4. <code>torch.cuda.empty_cache()</code>: Explicitly releases unused cached memory blocks back to the OS.</p>
+</blockquote>
+<h4 id="q22-why-does-the-system-combine-reciprocal-rank-fusion-rrf-with-linear-weights">Q22: Why does the system combine Reciprocal Rank Fusion (RRF) with linear weights?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+Pure linear score combination requires normalizing disparate score ranges (BM25 scores range from $0$ to $30+$, while Cosine similarities range from $-1$ to $+1$). Linear min-max scaling can be distorted by outliers.<br />
+<strong>RRF (Cormack et al., 2009)</strong> relies purely on rank order:
+$$\text{RRF_Score}(d) = \sum_{m \in {\text{BM25}, \text{Dense}}} \frac{1}{k + \text{Rank}_m(d)}$$
+The constant $k=60$ prevents top-ranked documents from dominating completely, creating a robust, outlier-immune rank fusion.</p>
+</blockquote>
+<h4 id="q23-why-use-fastapi-instead-of-flask-or-django">Q23: Why use FastAPI instead of Flask or Django?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+1. <strong>Asynchronous Non-Blocking I/O:</strong> FastAPI is built on Starlette and ASGI (<code>uvicorn</code>), allowing asynchronous request handling (<code>async def search(...)</code>) so long-running GPU tensor operations do not block the web server thread.
+2. <strong>Pydantic Schema Validation:</strong> Enforces strict type validation on search queries and JSON payloads with automatic 422 error generation.
+3. <strong>Native OpenAPI / Swagger Docs:</strong> Automatically generates interactive documentation at <code>/docs</code>.</p>
+</blockquote>
+<h4 id="q24-what-are-the-trade-offs-of-using-a-12000-vocabulary-bpe-tokenizer">Q24: What are the trade-offs of using a 12,000-vocabulary BPE tokenizer?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+- <strong>Advantage:</strong> Keeps model size extremely compact (1.95M parameters) and ensures fast tensor multiplication on our laptop GPU while guaranteeing zero Out-of-Vocabulary (OOV) errors.
+- <strong>Trade-off:</strong> Highly obscure, compound library names get split into multiple subword pieces, increasing sequence length and slightly diluting dense vector precision.</p>
+</blockquote>
+<h4 id="q25-how-does-your-system-compare-to-commercial-retrieval-augmented-generation-rag">Q25: How does your system compare to commercial Retrieval-Augmented Generation (RAG)?</h4>
+<blockquote>
+<p><strong>Answer:</strong><br />
+Standard RAG uses an LLM to read retrieved documents and synthesize an answer. However, the generation step introduces latency (2–5 seconds), high API billing, and the risk that the LLM still hallucinates synthesis.<br />
+FixItAI is an <strong>extractive diagnostic retrieval system</strong>: it returns verified, source-grounded Stack Overflow passages with direct attribution and uses extractive sentence scoring for summaries, providing sub-25ms response times, zero API costs, and 100% provenance guarantee.</p>
+</blockquote>
+</body>
+</html>

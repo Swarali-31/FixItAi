@@ -1,0 +1,68 @@
+[
+  {
+    "method": "Bag of Words (CountVectorizer)",
+    "paradigm": "Lexical / Frequency Count",
+    "architecture": "Sparse Frequency Count",
+    "recall_at_1": 0.038,
+    "recall_at_5": 0.124,
+    "mrr": 0.0815,
+    "ndcg_at_5": 0.1032,
+    "avg_latency_ms": 4.2,
+    "notes": "Exact token overlap without frequency discounting; struggles with common terms."
+  },
+  {
+    "method": "TF-IDF (1-2 N-grams)",
+    "paradigm": "Lexical / Weighted Sparsity",
+    "architecture": "Sublinear Term Frequency",
+    "recall_at_1": 0.051,
+    "recall_at_5": 0.162,
+    "mrr": 0.1094,
+    "ndcg_at_5": 0.1341,
+    "avg_latency_ms": 6.8,
+    "notes": "Sublinear TF with bigram combinations; preserves precise error codes."
+  },
+  {
+    "method": "BM25Okapi",
+    "paradigm": "Probabilistic Relevance Model",
+    "architecture": "Probabilistic Document Saturation",
+    "recall_at_1": 0.058,
+    "recall_at_5": 0.181,
+    "mrr": 0.1221,
+    "ndcg_at_5": 0.151,
+    "avg_latency_ms": 8.5,
+    "notes": "Document length normalization with saturation parameters k1=1.5, b=0.75."
+  },
+  {
+    "method": "Scratch-Trained FixItAI BERT (4 Epochs CUDA)",
+    "paradigm": "Neural Bi-Encoder (Local Training)",
+    "architecture": "2-Layer Bidirectional Transformer",
+    "recall_at_1": 0.066,
+    "recall_at_5": 0.196,
+    "mrr": 0.1313,
+    "ndcg_at_5": 0.1625,
+    "avg_latency_ms": 14.2,
+    "notes": "Trained from random initialization on 173k Stack Overflow pairs."
+  },
+  {
+    "method": "Pretrained Sentence-BERT (all-MiniLM-L6-v2)",
+    "paradigm": "Dense Transfer Transformer",
+    "architecture": "6-Layer 384-Dim Transformer",
+    "recall_at_1": 0.142,
+    "recall_at_5": 0.385,
+    "mrr": 0.248,
+    "ndcg_at_5": 0.312,
+    "avg_latency_ms": 18.6,
+    "notes": "Pretrained multi-task sentence embeddings."
+  },
+  {
+    "method": "Hybrid Reciprocal Rank Fusion (BM25 + SBERT)",
+    "paradigm": "Multi-Stage Hybrid Ensemble",
+    "architecture": "Sparse + Dense RRF Fusion (k=60)",
+    "recall_at_1": 0.168,
+    "recall_at_5": 0.432,
+    "mrr": 0.2815,
+    "ndcg_at_5": 0.354,
+    "avg_latency_ms": 22.4,
+    "notes": "Combines lexical exact error matching with semantic latent understanding."
+  }
+]
