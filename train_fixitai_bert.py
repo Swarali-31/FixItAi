@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
-from train_fixitai import load_pairs, make_tokenizer, batch_encode, evaluate
+from src.training_data import load_pairs, make_tokenizer, batch_encode, evaluate
 
 
 def main():

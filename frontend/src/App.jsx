@@ -197,12 +197,12 @@ function App() {
                 <div className="float-card float-card-top"><Search size={15} /> Error context</div>
                 <div className="float-card float-card-bottom"><ShieldCheck size={15} /> Source-backed results</div>
               </div>
-              <div className="hero-bottom"><span><Cpu size={15} /> Scratch-trained Transformer</span><span><Database size={15} /> Runs locally on your GPU</span><span><ShieldCheck size={15} /> Sources shown with results</span></div>
+              <div className="hero-bottom"><span><Cpu size={15} /> BERT Transformer encoder</span><span><Database size={15} /> Runs locally on your GPU</span><span><ShieldCheck size={15} /> Sources shown with results</span></div>
             </section>
 
             <section className="home-stats">
               <StatCard icon={Database} label="Indexed passages" value={passageCount} detail="Technical Q&A and local notes" />
-              <StatCard icon={Cpu} label="Model" value="Trained from scratch" detail={health?.pretrained === false ? "No pretrained weights" : "Local Transformer"} />
+              <StatCard icon={Cpu} label="Model" value="BERT encoder" detail={health?.pretrained ? "Fine-tuned pretrained BERT" : "BERT trained from scratch"} />
               <StatCard icon={Gauge} label="GPU" value={gpuLabel.replace("NVIDIA GeForce ", "")} detail="CUDA training and inference" />
             </section>
 
@@ -247,7 +247,7 @@ function App() {
               <div className="result-list">{results.map((result, index) => <article className="result-card" key={result.chunk_id}>
                 <div className="result-card-head"><span className="result-rank">{String(index + 1).padStart(2, "0")}</span><div><div className="result-source">{result.source}</div><h3>{result.title}</h3></div><span className="score-pill">{result.score.toFixed(3)} match</span></div>
                 <p className="result-text">{result.text}</p>
-                <div className="result-meta"><span>TF-IDF {result.tfidf_score.toFixed(2)}</span><span>BM25 {result.bm25_score.toFixed(2)}</span><span>Transformer {result.semantic_score.toFixed(2)}</span></div>
+                <div className="result-meta"><span>TF-IDF {result.tfidf_score.toFixed(2)}</span><span>BM25 {result.bm25_score.toFixed(2)}</span><span>BERT similarity {result.semantic_score.toFixed(2)}</span></div>
                 <div className="result-actions">{result.url && <a href={result.url} target="_blank" rel="noreferrer">Open answer source <ArrowUpRight size={14} /></a>}{result.question_url && <a href={result.question_url} target="_blank" rel="noreferrer">View question <ArrowUpRight size={14} /></a>}</div>
                 {result.attribution && <details className="attribution"><summary>Attribution details</summary><p>{result.attribution}</p></details>}
               </article>)}</div>
@@ -271,7 +271,7 @@ function App() {
 
         {page === "evaluation" && (
           <>
-            <PageHeading eyebrow="MODEL PERFORMANCE" title="Evaluation" copy="Held-out retrieval results for the Transformer trained from scratch on your dataset." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
+            <PageHeading eyebrow="MODEL PERFORMANCE" title="Evaluation" copy="Held-out retrieval results for the BERT encoder trained for question–answer retrieval." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
             {pageError && <div className="notice error">{pageError}</div>}
             {evaluation?.validation ? <>
               <div className="evaluation-stats"><StatCard icon={Search} label="Recall at 1" value={`${(evaluation.validation.recall_at_1 * 100).toFixed(1)}%`} detail="Top result is the target" /><StatCard icon={Database} label="Recall at 5" value={`${(evaluation.validation.recall_at_5 * 100).toFixed(1)}%`} detail="Target in top five" /><StatCard icon={Gauge} label="MRR" value={evaluation.validation.mrr.toFixed(3)} detail="Mean reciprocal rank" /><StatCard icon={MessageSquareText} label="Validation queries" value={evaluation.validation.queries.toLocaleString()} detail={`${evaluation.validation.candidate_answers.toLocaleString()} answer candidates`} /></div>
@@ -293,8 +293,8 @@ function App() {
         {page === "about" && (
           <>
             <PageHeading eyebrow="THE PROJECT" title="About FixItAI" copy="A local technical troubleshooting and evidence-retrieval workspace." action={<button className="button button-light" onClick={() => setPage("home")}><ArrowLeft size={16} /> Home</button>} />
-            <section className="about-hero"><div className="about-icon"><Sparkles size={25} /></div><h2>Find evidence. Make the next step clearer.</h2><p>FixItAI combines searchable technical documentation with a small Transformer trained from random initialization on the supplied Q&A dataset. It returns passages and source links instead of generating unsupported fixes.</p></section>
-            <div className="about-grid"><article className="panel"><Cpu size={20} /><h3>Model trained from scratch</h3><p>The dual encoder uses a locally trained tokenizer and a two-layer Transformer. No pretrained weights or hosted language model are used.</p></article><article className="panel"><Search size={20} /><h3>Hybrid retrieval</h3><p>TF-IDF and BM25 identify lexical matches; the Transformer adds dense semantic similarity to the ranking.</p></article><article className="panel"><ShieldCheck size={20} /><h3>Evidence with limits</h3><p>Stack Overflow answers are community contributions. Vote counts provide weak labels, not proof of correctness or freshness.</p></article><article className="panel"><Database size={20} /><h3>Your own library</h3><p>Add TXT, Markdown, PDF, CSV, or JSON files that you are authorized to index. Uploaded passages stay in the local project.</p></article></div>
+            <section className="about-hero"><div className="about-icon"><Sparkles size={25} /></div><h2>Find evidence. Make the next step clearer.</h2><p>FixItAI combines searchable technical documentation with a BERT Transformer encoder trained for question–answer retrieval. It returns passages and source links instead of generating unsupported fixes.</p></section>
+            <div className="about-grid"><article className="panel"><Cpu size={20} /><h3>BERT retrieval encoder</h3><p>The bidirectional BERT encoder maps questions and answers to vectors. Its initialization status and training setup are reported with the model artifacts.</p></article><article className="panel"><Search size={20} /><h3>Hybrid retrieval</h3><p>TF-IDF and BM25 identify lexical matches; BERT adds dense semantic similarity to the ranking.</p></article><article className="panel"><ShieldCheck size={20} /><h3>Evidence with limits</h3><p>Stack Overflow answers are community contributions. Vote counts provide weak labels, not proof of correctness or freshness.</p></article><article className="panel"><Database size={20} /><h3>Your own library</h3><p>Add TXT, Markdown, PDF, CSV, or JSON files that you are authorized to index. Uploaded passages stay in the local project.</p></article></div>
             <div className="license-note"><Info size={17} /><p>Retrieved Stack Overflow passages keep their post links and attribution. Review applicable CC BY-SA terms before redistributing them.</p></div>
           </>
         )}

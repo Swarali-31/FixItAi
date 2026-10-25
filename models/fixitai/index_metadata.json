@@ -1,8 +1,0 @@
-{
-  "model": "FixItAI ScratchEncoder",
-  "model_dir": "D:\\NLP_PROJECT\\models\\fixitai",
-  "device": "cuda",
-  "passages": 22822,
-  "embedding_dimension": 128,
-  "pretrained": false
-}

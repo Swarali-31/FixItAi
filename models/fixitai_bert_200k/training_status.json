@@ -1,6 +1,6 @@
 {
   "status": "completed",
-  "model": "BERT encoder, random initialization",
+  "model": "BERT Transformer encoder trained from scratch",
   "pretrained_weights": false,
   "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
   "completed_epochs": 4,

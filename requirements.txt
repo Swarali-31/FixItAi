@@ -2,6 +2,7 @@ numpy>=1.26,<3
 scikit-learn>=1.4,<2
 torch>=2.2
 tokenizers>=0.20,<1
+transformers>=4.45,<6
 rank-bm25>=0.2.2,<1
 pypdf>=5,<7
 pymongo>=4.8,<5

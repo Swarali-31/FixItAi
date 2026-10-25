@@ -12,7 +12,7 @@ def main():
     import numpy as np
     from src.bert_encoder import encode_texts, load_bert_model, require_cuda
     from src.fixitai import chunk_documents, load_documents
-    from train_fixitai import clean_html, load_pairs
+    from src.training_data import clean_html, load_pairs
 
     model_dir = ROOT / "models" / "fixitai_bert_200k"
     status_path = model_dir / "training_status.json"

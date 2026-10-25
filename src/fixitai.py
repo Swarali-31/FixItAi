@@ -67,18 +67,17 @@ class HybridRetriever:
             self.bm25=BM25Okapi([TOKEN_RE.findall(t.casefold()) for t in texts]) if texts else None
         except ImportError: self.bm25=None
 
-    def set_scratch_model(self,model,tokenizer,device,embeddings=None):
+    def set_encoder(self,model,tokenizer,device,embeddings=None):
         if getattr(device,"type",None)!="cuda":raise RuntimeError("FixItAI semantic model must run on CUDA.")
         self.encoder=model;self.tokenizer=tokenizer;self.device=device;self.embeddings=embeddings
 
     def build_embeddings(self, device: str|None=None):
-        from .scratch_encoder import require_cuda
-        from .bert_encoder import encode_fixitai_texts,load_fixitai_model
+        from .bert_encoder import encode_fixitai_texts,load_fixitai_model,require_cuda
         import numpy as np
         cuda=require_cuda()
         if device and str(device).casefold() not in {"cuda","cuda:0"}:raise RuntimeError("FixItAI embeddings are CUDA-only.")
         model,tokenizer,cuda=load_fixitai_model(self.model_dir,cuda)
-        self.set_scratch_model(model,tokenizer,cuda)
+        self.set_encoder(model,tokenizer,cuda)
         texts=[c["title"]+". "+" ".join(c.get("technologies",[]))+". "+c["text"] for c in self.chunks]
         self.embeddings=encode_fixitai_texts(model,tokenizer,texts,cuda)
         return str(cuda)

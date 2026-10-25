@@ -35,3 +35,6 @@ models/fixitai_bert_200k/bert_encoder/*
 !models/fixitai_bert_200k/bert_encoder/config.json
 !models/fixitai_bert_200k/bert_encoder/model.safetensors
 outputs/*.log
+
+!models/fixitai_bert_200k/indexed_chunks.json
+!models/fixitai_bert_200k/passage_embeddings.npz

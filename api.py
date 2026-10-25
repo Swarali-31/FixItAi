@@ -12,12 +12,6 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent
-_BERT_MODEL_DIR = ROOT / "models" / "fixitai_bert_200k"
-_BERT_ARTIFACTS_READY = all(
-    (_BERT_MODEL_DIR / name).is_file()
-    for name in ("bert_encoder/config.json", "tokenizer.json", "indexed_chunks.json", "passage_embeddings.npz")
-)
-MODEL_DIR = _BERT_MODEL_DIR if _BERT_ARTIFACTS_READY else ROOT / "models" / "fixitai"
 BERT_MODEL_DIR = ROOT / "models" / "fixitai_bert_200k"
 SEED = ROOT / "data" / "knowledge_base"
 STORE = ROOT / "data" / "fixitai_chunks.json"
@@ -27,15 +21,8 @@ _runtime_lock = threading.Lock()
 
 
 def active_model_dir() -> Path:
-    """Switch to BERT only after its weights and complete vector index exist."""
-    required = (
-        BERT_MODEL_DIR / "bert_encoder" / "config.json",
-        BERT_MODEL_DIR / "bert_encoder" / "model.safetensors",
-        BERT_MODEL_DIR / "tokenizer.json",
-        BERT_MODEL_DIR / "indexed_chunks.json",
-        BERT_MODEL_DIR / "passage_embeddings.npz",
-    )
-    return BERT_MODEL_DIR if all(path.is_file() for path in required) else MODEL_DIR
+    """FixItAI uses its BERT encoder only; missing artifacts must fail visibly."""
+    return BERT_MODEL_DIR
 
 app = FastAPI(title="FixItAI API", version="1.0.0")
 app.add_middleware(
@@ -84,7 +71,7 @@ def _load_runtime(model_key: str, index_stamp: int, model_stamp: int, seed_stamp
     import numpy as np
     from src.fixitai import HybridRetriever
     from src.bert_encoder import encode_fixitai_texts, load_fixitai_model
-    from src.scratch_encoder import require_cuda
+    from src.bert_encoder import require_cuda
 
     device = require_cuda()
     model_dir = Path(model_key)
@@ -114,7 +101,7 @@ def _load_runtime(model_key: str, index_stamp: int, model_stamp: int, seed_stamp
     all_chunks = chunks + extra
     all_vectors = np.vstack([base_embeddings, extra_vectors])
     retriever = HybridRetriever(all_chunks, model_dir=model_dir)
-    retriever.set_scratch_model(model, tokenizer, device, all_vectors)
+    retriever.set_encoder(model, tokenizer, device, all_vectors)
     return retriever, all_chunks, str(device)
 
 
@@ -122,7 +109,7 @@ def get_runtime():
     with _runtime_lock:
         model_dir = active_model_dir()
         index_path = model_dir / "indexed_chunks.json"
-        model_path = model_dir / "bert_encoder" / "model.safetensors" if model_dir == BERT_MODEL_DIR else model_dir / "model.pt"
+        model_path = model_dir / "bert_encoder" / "model.safetensors"
         return _load_runtime(
             str(model_dir),
             index_path.stat().st_mtime_ns if index_path.exists() else 0,
@@ -139,10 +126,10 @@ def health():
     status = read_json(model_dir / "training_status.json", {})
     index = read_json(model_dir / "index_metadata.json", {})
     ready = all((model_dir / filename).is_file() for filename in ("tokenizer.json", "indexed_chunks.json", "passage_embeddings.npz"))
-    ready = ready and ((model_dir / "bert_encoder" / "model.safetensors").is_file() if model_dir == BERT_MODEL_DIR else (model_dir / "model.pt").is_file())
+    ready = ready and (model_dir / "bert_encoder" / "model.safetensors").is_file()
     return {
         "status": "ready" if ready else "missing_model",
-        "model": "random-init BERT encoder" if model_dir == BERT_MODEL_DIR else "scratch Transformer encoder",
+        "model": "BERT Transformer encoder (trained from scratch)",
         "training_status": status.get("status", "unknown"),
         "indexed_passages": int(index.get("passages", 0)),
         "gpu": training.get("gpu", "CUDA model"),

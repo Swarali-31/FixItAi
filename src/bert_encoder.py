@@ -1,4 +1,4 @@
-"""CUDA-only loader and sentence embedding helpers for FixItAI's random-init BERT."""
+"""CUDA-only loader and sentence embedding helpers for FixItAI's BERT encoder."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -58,16 +58,11 @@ def encode_texts(model, tokenizer, texts: list[str], device: torch.device, batch
 
 
 def load_fixitai_model(model_dir: str | Path, device: torch.device | None = None):
-    """Dispatch to the completed BERT checkpoint or the legacy scratch encoder."""
-    base = Path(model_dir)
-    if (base / "bert_encoder" / "config.json").is_file():
-        return load_bert_model(base, device)
-    from .scratch_encoder import load_scratch_model
-    return load_scratch_model(base, device)
+    """Load the project's BERT checkpoint; never substitute another encoder."""
+    return load_bert_model(model_dir, device)
 
 
 def encode_fixitai_texts(model, tokenizer, texts: list[str], device: torch.device, batch_size: int = 16):
-    if model.__class__.__name__ == "BertModel":
-        return encode_texts(model, tokenizer, texts, device, batch_size)
-    from .scratch_encoder import encode_texts as encode_scratch_texts
-    return encode_scratch_texts(model, tokenizer, texts, device, batch_size)
+    if model.__class__.__name__ != "BertModel":
+        raise TypeError("FixItAI only supports its BERT Transformer encoder.")
+    return encode_texts(model, tokenizer, texts, device, batch_size)
