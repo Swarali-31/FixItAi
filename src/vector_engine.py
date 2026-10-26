@@ -1,9 +1,5 @@
 """Word Vectorization, Embeddings, and Information Retrieval Benchmarking Engine.
 
-Directly covers Symbiosis NLP Syllabus (TEE7101):
-- Unit 2 & 3 / Lab 3: Word Vectorization (CountVectorizer / BoW, TF-IDF, Word Embeddings, SBERT, Cosine Similarity).
-- Unit 5: Paradigm Shift in NLP (Pretrained Transformers vs Scratch Transformers).
-- Provides Reciprocal Rank Fusion (RRF) and Empirical Baseline Benchmarks.
 """
 from __future__ import annotations
 

@@ -18,6 +18,7 @@ data/*.csv
 data/archive.zip
 data/fixitai_chunks.json
 data/query_history.json
+data/*.db
 !data/.gitkeep
 
 frontend/node_modules/

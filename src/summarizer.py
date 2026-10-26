@@ -47,70 +47,85 @@ class DiagnosticSummarizer:
 
         # 1. Separate code blocks from explanatory text
         code_blocks = self._extract_code_blocks(passage)
+
+        # 2. Check for explicit structured sections in knowledge base documents
+        explicit_root_cause = None
+        explicit_steps = []
+
+        rc_match = re.search(r"##\s*Root Cause\s*\n([\s\S]*?)(?=\n##|\Z)", passage, re.I)
+        if rc_match:
+            rc_clean = re.sub(r"```[\s\S]*?```", " ", rc_match.group(1))
+            rc_clean = re.sub(r"`[^`]+`", " ", rc_clean)
+            rc_clean = re.sub(r"\s+", " ", rc_clean).strip()
+            if len(rc_clean) > 20:
+                explicit_root_cause = rc_clean
+
+        steps_match = re.search(r"##\s*Resolution Steps\s*\n([\s\S]*?)(?=\n##|\Z)", passage, re.I)
+        if steps_match:
+            lines = [l.strip() for l in steps_match.group(1).splitlines() if l.strip()]
+            numbered = [re.sub(r"^\d+[\.\)]\s*", "", l) for l in lines if re.match(r"^\d+[\.\)]", l)]
+            if numbered:
+                explicit_steps = numbered[:5]
+
         clean_prose = self._strip_code_for_summarization(passage)
 
-        # 2. Sentence segmentation
+        # 3. Sentence segmentation
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean_prose) if len(s.strip()) > 15]
         if not sentences:
             sentences = [clean_prose[:250]]
 
         encoder = self._get_encoder()
         selected_sentences = []
-        root_cause = "Issue arises from configuration, syntax, or runtime discrepancy."
+        root_cause = explicit_root_cause or "Issue arises from configuration, syntax, or runtime discrepancy."
 
-        if encoder is not None and len(sentences) > 1:
-            try:
-                # Pre-trained BERT Extractive Summarization (BERTSum paradigm)
-                # Compute query embedding and sentence embeddings
-                query_vec = encoder.encode(query, normalize_embeddings=True)
-                sent_vecs = encoder.encode(sentences, normalize_embeddings=True)
+        if explicit_root_cause is None:
+            if encoder is not None and len(sentences) > 1:
+                try:
+                    # Pre-trained BERT Extractive Summarization (BERTSum paradigm)
+                    query_vec = encoder.encode(query, normalize_embeddings=True)
+                    sent_vecs = encoder.encode(sentences, normalize_embeddings=True)
+                    sims = sent_vecs @ query_vec
 
-                # Cosine similarity ranking
-                sims = sent_vecs @ query_vec
+                    cause_cues = ["because", "due to", "caused by", "missing", "occurs when", "cannot find", "failed to"]
+                    cause_candidate = None
+                    for s in sentences:
+                        if any(cue in s.lower() for cue in cause_cues):
+                            cause_candidate = s
+                            break
 
-                # Identify sentence most descriptive of the root cause
-                cause_cues = ["because", "due to", "caused by", "missing", "occurs when", "cannot find", "failed to"]
-                cause_candidate = None
-                for s in sentences:
-                    if any(cue in s.lower() for cue in cause_cues):
-                        cause_candidate = s
-                        break
+                    if cause_candidate:
+                        root_cause = cause_candidate
+                    else:
+                        top_idx = int(np.argmax(sims))
+                        root_cause = sentences[top_idx]
 
-                if cause_candidate:
-                    root_cause = cause_candidate
-                else:
-                    top_idx = int(np.argmax(sims))
-                    root_cause = sentences[top_idx]
-
-                # Select top salient sentences for actionable summary
-                top_indices = np.argsort(sims)[::-1][:3]
-                top_indices = sorted(top_indices)  # restore original narrative order
-                selected_sentences = [sentences[i] for i in top_indices if sentences[i] != root_cause]
-            except Exception:
-                selected_sentences = sentences[:3]
+                    top_indices = np.argsort(sims)[::-1][:3]
+                    top_indices = sorted(top_indices)
+                    selected_sentences = [sentences[i] for i in top_indices if sentences[i] != root_cause]
+                except Exception:
+                    selected_sentences = sentences[:3]
+                    root_cause = sentences[0] if sentences else root_cause
+            else:
                 root_cause = sentences[0] if sentences else root_cause
-        else:
-            root_cause = sentences[0] if sentences else root_cause
-            selected_sentences = sentences[1:3]
+                selected_sentences = sentences[1:3]
 
-        # 3. Action steps extraction
-        action_steps = self._extract_action_steps(sentences, selected_sentences)
+        # 4. Action steps extraction
+        action_steps = explicit_steps if explicit_steps else self._extract_action_steps(sentences, selected_sentences)
 
-        # 4. Synthesize cohesive summary
+        # 5. Synthesize cohesive summary
         summary_text = f"{root_cause} " + " ".join(selected_sentences[:2])
         summary_text = re.sub(r"\s+", " ", summary_text).strip()
 
-        # 5. Best code snippet selection
+        # 6. Best code snippet selection
         best_code = None
         if code_blocks:
-            # Pick the most substantial, informative code block
             best_code = max(code_blocks, key=lambda b: len(b.strip()))
             if len(best_code.strip()) < 5:
                 best_code = None
 
         return {
             "summary": summary_text[:400] + ("..." if len(summary_text) > 400 else ""),
-            "root_cause": root_cause[:250],
+            "root_cause": root_cause[:350],
             "action_steps": action_steps,
             "code_snippet": best_code,
             "model_used": "Pre-trained Sentence-BERT (all-MiniLM-L6-v2) Extractive Summarizer"
@@ -143,9 +158,11 @@ class DiagnosticSummarizer:
         return []
 
     def _strip_code_for_summarization(self, text: str) -> str:
-        """Remove large code dumps so BERT summarizes the explanation."""
+        """Remove large code dumps and markdown metadata so BERT summarizes the explanation."""
         clean = re.sub(r"```[\s\S]*?```", " [code block] ", text)
         clean = re.sub(r"`[^`]+`", " ", clean)
+        clean = re.sub(r"^#+\s+.*$", " ", clean, flags=re.M)
+        clean = re.sub(r"^(?:Category|Technologies|Author|Tags):\s*.*$", " ", clean, flags=re.M)
         return re.sub(r"\s+", " ", clean).strip()
 
     def _extract_action_steps(self, all_sentences: List[str], selected: List[str]) -> List[str]:

@@ -1,58 +1,82 @@
 # FixItAI
 
-FixItAI is a local technical troubleshooting website. Its React and Vite frontend uses a FastAPI backend, a BERT Transformer encoder trained from scratch, and indexed technical passages.
+FixItAI is a local, offline technical diagnostic and information retrieval workspace. It features a modern React + Vite frontend, a FastAPI REST backend, multi-stage Information Retrieval with Reciprocal Rank Fusion (RRF), an extractive Transformer diagnostic summarizer, an English-to-Hindi vernacular diagnostic engine, and thread-safe SQLite persistence.
 
-## Start the website in development
+## System Requirements & Portability
 
-Open two PowerShell terminals.
+FixItAI runs natively across:
+- **macOS (Apple Silicon M1/M2/M3/M4):** Accelerated via PyTorch Metal Performance Shaders (MPS).
+- **Windows / Linux with NVIDIA GPU:** Accelerated via PyTorch CUDA 12.x.
+- **CPU Fallback:** Vector-optimized float32 inference on any standard machine.
 
-**Terminal 1 - Python API**
+---
 
-```powershell
-cd D:\NLP_PROJECT
-.\.venv\Scripts\python.exe -m uvicorn api:app --host 127.0.0.1 --port 8000
+## Quickstart
+
+### 1. Install Backend Dependencies
+
+```bash
+# macOS / Linux
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Windows PowerShell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
 
-**Terminal 2 - React frontend**
+### 2. Start the Application
 
-```powershell
-cd D:\NLP_PROJECT\frontend
-npm.cmd install
-npm.cmd run dev
+You can run the frontend and backend together or independently:
+
+**Single Combined Service (FastAPI serves compiled React app at `http://127.0.0.1:8000`):**
+```bash
+# Build the React frontend
+cd frontend
+npm install
+npm run build
+cd ..
+
+# Start FastAPI
+uvicorn api:app --host 127.0.0.1 --port 8000
+```
+Open `http://127.0.0.1:8000` in your browser.
+
+**Development Mode (Hot Reloading):**
+- **Terminal 1 (Backend):** `uvicorn api:app --reload --host 127.0.0.1 --port 8000`
+- **Terminal 2 (Frontend):** `cd frontend && npm run dev` (Runs at `http://127.0.0.1:5173`)
+
+---
+
+## Running Automated Tests
+
+Run the test suite using `pytest`:
+```bash
+pytest tests/ -v
 ```
 
-Open `http://127.0.0.1:5173`. The home page and non-search sections do not need to initialize CUDA. Search loads the BERT encoder and requires the NVIDIA CUDA runtime.
+---
 
-## Build a single local website
+## Git LFS & Large Datasets
 
-```powershell
-cd D:\NLP_PROJECT\frontend
-npm.cmd install
-npm.cmd run build
-cd D:\NLP_PROJECT
-.\.venv\Scripts\python.exe -m uvicorn api:app --host 127.0.0.1 --port 8000
+Large dataset indices (`indexed_chunks.json`, `passage_embeddings.npz`) are tracked via Git LFS. If you have Git LFS installed, pull the complete 173k passage index:
+```bash
+git lfs pull
 ```
+*Note: If Git LFS is not installed, FixItAI automatically falls back to indexing the curated technical guides in `data/knowledge_base/` and user-uploaded documents without crashing.*
 
-Open `http://127.0.0.1:8000`. FastAPI serves the compiled React website and its API from the same local process.
+---
 
-## BERT retrieval encoder
+## Information Retrieval & Neural Architecture
 
-The active model is a compact bidirectional BERT encoder trained from scratch on the question/answer sample with a contrastive retrieval objective. Its parameters start from random initialization; it uses no pretrained weights. Archive parsing and tokenization are CPU-side; BERT forward/backward training requires CUDA and has no CPU fallback.
+- **Multi-Stage Fusion:** Okapi BM25 probabilistic scoring, sublinear TF-IDF (1-2 n-grams), and dense BERT embeddings fused via **Reciprocal Rank Fusion (RRF)**:
+  $$RRF(d) = \sum_{m} \frac{w_m}{k + \text{rank}_m(d)}$$
+- **Extractive Summarizer:** Pretrained Transformer extractor isolating root causes, action checklists, and verified code fixes.
+- **Neural Translator:** Seq2Seq MarianMT with technical token preservation and domain-specific Hindi explanations.
+- **Persistence:** Thread-safe local SQLite database (`data/fixitai.db`) with automatic migration from legacy JSON.
 
-```powershell
-cd D:\NLP_PROJECT
-.\.venv\Scripts\python.exe train_fixitai_bert.py --epochs 4 --batch-size 8 --max-questions 200000
-```
-
-The tokenizer, BERT checkpoint, epoch history, run status, and indexed passage vectors are saved under `models\fixitai_bert_200k`. Training completed four CUDA epochs on 173,857 matched question/answer pairs (156,472 train; 17,385 validation). Best held-out ranking was epoch 3: Recall@1 6.60%, Recall@5 19.60%, MRR 0.1313, measured on 1,000 queries against 173,857 candidates using vote-derived weak labels. The run resumed from epoch-2 weights; AdamW state restarted because optimizer state was not checkpointed. These results do not establish technical correctness.
-
-To build the BERT passage index and CUDA embeddings:
-
-```powershell
-.\.venv\Scripts\python.exe index_fixitai_bert.py
-```
-
-The API uses BERT exclusively and reports an error if its checkpoint or passage index is missing; it does not fall back to another encoder. The final CA-3 report is `FixItAI_Report_BERT_Results.docx` and `FixItAI_Report_BERT_Results.pdf`.
 
 ## Dataset
 
