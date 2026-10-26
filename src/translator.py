@@ -708,6 +708,16 @@ class IndicDiagnosticTranslator:
                 "model": "FixItAI Diagnostic Engine (English)"
             }
 
+        # Sanitize multi-line query if a raw stack trace was passed
+        if "\n" in query:
+            try:
+                from src.nlp_pipeline import get_nlp_pipeline
+                cleaned = get_nlp_pipeline().parse_stack_trace(query).get("clean_query")
+                if cleaned:
+                    query = cleaned
+            except Exception:
+                pass
+
         text_context = (query + " " + root_cause).lower()
         key = None
         if "modulenotfound" in text_context or "no module named" in text_context or "importerror" in text_context:

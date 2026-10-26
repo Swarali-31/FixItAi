@@ -15,6 +15,9 @@ outputs/cache-gpu-smoke/
 outputs/*.npy
 data/*.json
 data/*.csv
+data/**/*.csv
+data/archive/
+data/archive/*
 data/archive.zip
 data/fixitai_chunks.json
 data/query_history.json

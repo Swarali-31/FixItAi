@@ -37,12 +37,13 @@ app.add_middleware(
 
 
 class SearchRequest(BaseModel):
-    query: str = Field(min_length=2, max_length=2000)
+    query: str = Field(min_length=2, max_length=50000)
     technology: str = "All"
     mode: str = "Hybrid"
     top_k: int = Field(default=5, ge=1, le=10)
     wizard_option: dict | None = None
     selected_options: dict[str, str] = {}
+    target_lang: str = "en"
 
 
 class WizardRefineRequest(BaseModel):
@@ -262,23 +263,32 @@ def search(payload: SearchRequest):
 
         wizard_opt = payload.wizard_option
         search_query = effective_query
+        parsed_trace_meta = None
+
+        # Auto-detect pasted multi-line terminal crash logs or stack traces
+        if "\n" in effective_query:
+            candidate_trace = nlp.parse_stack_trace(effective_query)
+            if candidate_trace.get("is_stack_trace") and candidate_trace.get("clean_query"):
+                search_query = candidate_trace["clean_query"]
+                parsed_trace_meta = candidate_trace
+
         if wizard_opt:
             refinement = wizard_opt.get("refinement") or wizard_opt.get("label", "")
-            search_query = f"{effective_query} {refinement}".strip()
+            search_query = f"{search_query} {refinement}".strip()
 
         # 1. Domain Guardrail Check
-        guardrail = nlp.check_domain_guardrail(effective_query)
+        guardrail = nlp.check_domain_guardrail(search_query if parsed_trace_meta else effective_query)
 
         # 2. NLP pipeline linguistic analysis (Unit 1, 2, 4)
-        nlp_analysis = nlp.analyze_linguistics(effective_query)
+        nlp_analysis = nlp.analyze_linguistics(search_query if parsed_trace_meta else effective_query)
 
         # 3. Typo auto-correction check & WordNet Synset Expansion (Unit 1 & 2 / Lab 2)
         typo_info = nlp.suggest_typo_correction(effective_query)
         wordnet_info = nlp.expand_query_wordnet(effective_query)
         perplexity = nlp.calculate_perplexity(effective_query)
 
-        # 4. Information Retrieval search across vectorization schemes (with RRF)
-        results = retriever.search(search_query, payload.top_k, payload.technology, payload.mode)
+        # 4. Information Retrieval search using FixItAI Hybrid Ensemble (single best production model)
+        results = retriever.search(search_query, payload.top_k, payload.technology, "Hybrid")
 
         # 5. Pretrained Transformer Text Summarization or Contextual Reasoning
         ai_solution = None
@@ -310,7 +320,7 @@ def search(payload: SearchRequest):
                 ai_solution["scenario_title"] = " + ".join(all_active_opts.values()) or "Knowledge Base Evidence"
                 ai_solution["model_used"] = f"Knowledge Base Extractive Engine: '{top_match.get('title')}' (Sentence-BERT)"
             else:
-                ai_solution = nlp.resolve_compound_wizard_options(payload.query, all_active_opts)
+                ai_solution = nlp.resolve_compound_wizard_options(search_query, all_active_opts)
                 ai_solution["source_type"] = "synthesized_inference"
                 ai_solution["kb_notice"] = "No direct passage in local knowledge base. Synthesized from FixItAI Diagnostic Reasoning Engine."
         elif results:
@@ -319,12 +329,28 @@ def search(payload: SearchRequest):
                 append_history(HISTORY, {"query": payload.query, "result_ids": [item["chunk_id"] for item in results], "feedback": None})
             except Exception:
                 pass
-            ai_solution = get_summarizer().summarize(effective_query, top_match.get("text", ""), top_match.get("title", ""))
+            ai_solution = get_summarizer().summarize(search_query, top_match.get("text", ""), top_match.get("title", ""))
             ai_solution["source_type"] = "knowledge_base"
             ai_solution["source_title"] = top_match.get("title", "")
 
+        # Optional automatic translation for selected regional language
+        translated_solution = None
+        if payload.target_lang and payload.target_lang != "en" and ai_solution:
+            try:
+                from src.translator import get_translator
+                translator = get_translator()
+                translated_solution = translator.explain_diagnostic(
+                    query=search_query,
+                    root_cause=ai_solution.get("root_cause", ""),
+                    action_steps=ai_solution.get("action_steps", []),
+                    code_snippet=ai_solution.get("code_snippet"),
+                    target_lang=payload.target_lang
+                )
+            except Exception:
+                translated_solution = None
+
         # 6. Interactive Diagnostic Wizard Questions (dynamically generated from query & KB results)
-        wizard_questions = nlp.generate_diagnostic_wizard(effective_query, top_match, results)
+        wizard_questions = nlp.generate_diagnostic_wizard(search_query, top_match, results)
 
         # 7. Confidence Score & Meter
         confidence_pct = min(100, int(top_score * 100))
@@ -341,9 +367,10 @@ def search(payload: SearchRequest):
             "results": results,
             "analysis": nlp_analysis,
             "ai_solution": ai_solution,
+            "translated_solution": translated_solution,
             "device": device,
             "latency_ms": latency_ms,
-            "retrieval_mode": payload.mode,
+            "retrieval_mode": "Hybrid",
             "guardrail": guardrail,
             "typo_correction": typo_info,
             "wordnet_expansion": wordnet_info,
@@ -353,7 +380,8 @@ def search(payload: SearchRequest):
                 "level": confidence_level
             },
             "wizard_questions": wizard_questions,
-            "indic_meta": indic_meta
+            "indic_meta": indic_meta,
+            "parsed_trace": parsed_trace_meta
         }
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Search could not complete: {exc}") from exc

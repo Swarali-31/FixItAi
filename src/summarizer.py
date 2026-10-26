@@ -23,13 +23,15 @@ class DiagnosticSummarizer:
 
     def _get_encoder(self):
         if self._sbert is None:
+            from src.bert_encoder import get_device
+            dev = str(get_device())
             try:
                 from sentence_transformers import SentenceTransformer
-                self._sbert = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
+                self._sbert = SentenceTransformer("all-MiniLM-L6-v2", device=dev, local_files_only=True)
             except Exception:
                 try:
                     from sentence_transformers import SentenceTransformer
-                    self._sbert = SentenceTransformer("all-MiniLM-L6-v2")
+                    self._sbert = SentenceTransformer("all-MiniLM-L6-v2", device=dev)
                 except Exception:
                     self._sbert = None
         return self._sbert
@@ -52,7 +54,7 @@ class DiagnosticSummarizer:
         explicit_root_cause = None
         explicit_steps = []
 
-        rc_match = re.search(r"##\s*Root Cause\s*\n([\s\S]*?)(?=\n##|\Z)", passage, re.I)
+        rc_match = re.search(r"##\s*Root Cause\s*[:\n\s]([\s\S]*?)(?=##|\Z)", passage, re.I)
         if rc_match:
             rc_clean = re.sub(r"```[\s\S]*?```", " ", rc_match.group(1))
             rc_clean = re.sub(r"`[^`]+`", " ", rc_clean)
@@ -60,19 +62,24 @@ class DiagnosticSummarizer:
             if len(rc_clean) > 20:
                 explicit_root_cause = rc_clean
 
-        steps_match = re.search(r"##\s*Resolution Steps\s*\n([\s\S]*?)(?=\n##|\Z)", passage, re.I)
+        steps_match = re.search(r"##\s*Resolution Steps\s*[:\n\s]([\s\S]*?)(?=##|\Z)", passage, re.I)
         if steps_match:
-            lines = [l.strip() for l in steps_match.group(1).splitlines() if l.strip()]
-            numbered = [re.sub(r"^\d+[\.\)]\s*", "", l) for l in lines if re.match(r"^\d+[\.\)]", l)]
-            if numbered:
-                explicit_steps = numbered[:5]
+            raw_steps = steps_match.group(1)
+            items = re.findall(r"(?:^|\s)\d+[\.\)]\s+([\s\S]*?)(?=(?:\s\d+[\.\)]|\Z))", raw_steps)
+            if items:
+                explicit_steps = [re.sub(r"\s+", " ", it).strip() for it in items if len(it.strip()) > 10][:5]
+            else:
+                lines = [l.strip() for l in raw_steps.splitlines() if l.strip()]
+                numbered = [re.sub(r"^\d+[\.\)]\s*", "", l) for l in lines if re.match(r"^\d+[\.\)]", l)]
+                if numbered:
+                    explicit_steps = numbered[:5]
 
         clean_prose = self._strip_code_for_summarization(passage)
 
         # 3. Sentence segmentation
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean_prose) if len(s.strip()) > 15]
         if not sentences:
-            sentences = [clean_prose[:250]]
+            sentences = [clean_prose[:250]] if len(clean_prose) > 15 else []
 
         encoder = self._get_encoder()
         selected_sentences = []
@@ -107,7 +114,10 @@ class DiagnosticSummarizer:
                     root_cause = sentences[0] if sentences else root_cause
             else:
                 root_cause = sentences[0] if sentences else root_cause
-                selected_sentences = sentences[1:3]
+                selected_sentences = sentences[1:3] if len(sentences) > 1 else []
+
+        if not root_cause or len(root_cause.strip()) < 10:
+            root_cause = f"The issue is caused by runtime or dependency inconsistency: {query.strip()}."
 
         # 4. Action steps extraction
         action_steps = explicit_steps if explicit_steps else self._extract_action_steps(sentences, selected_sentences)
@@ -137,8 +147,13 @@ class DiagnosticSummarizer:
         if fenced:
             return [b.strip() for b in fenced if b.strip()]
 
+        # Find backtick command lines like `pip install ...`
+        backtick_cmds = re.findall(r"`((?:pip|npm|python|docker|git|source|export|brew|apt|sudo)\s+[^`]+)`", text)
+        if backtick_cmds:
+            return ["\n".join(backtick_cmds[:4])]
+
         # Find CLI command or code lines like 'pip install ...' or 'export ...' or '{ ... }'
-        lines = text.splitlines()
+        lines = text.splitlines() if "\n" in text else [text]
         code_lines = []
         for l in lines:
             stripped = l.strip()
@@ -148,6 +163,7 @@ class DiagnosticSummarizer:
                 stripped.startswith("python ") or
                 stripped.startswith("docker ") or
                 stripped.startswith("git ") or
+                stripped.startswith("source ") or
                 "import " in stripped or 
                 "def " in stripped or 
                 "class " in stripped):
@@ -161,8 +177,9 @@ class DiagnosticSummarizer:
         """Remove large code dumps and markdown metadata so BERT summarizes the explanation."""
         clean = re.sub(r"```[\s\S]*?```", " [code block] ", text)
         clean = re.sub(r"`[^`]+`", " ", clean)
-        clean = re.sub(r"^#+\s+.*$", " ", clean, flags=re.M)
-        clean = re.sub(r"^(?:Category|Technologies|Author|Tags):\s*.*$", " ", clean, flags=re.M)
+        # Strip header markers (#, ##, ###) without deleting the following prose
+        clean = re.sub(r"#+\s*", " ", clean)
+        clean = re.sub(r"\b(?:Category|Technologies|Author|Tags):\s*", " ", clean)
         return re.sub(r"\s+", " ", clean).strip()
 
     def _extract_action_steps(self, all_sentences: List[str], selected: List[str]) -> List[str]:

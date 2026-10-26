@@ -74,7 +74,7 @@ export function TroubleshootTab({
   const selectedLangMeta = REGIONAL_LANGUAGES.find((l) => l.code === targetLang) || REGIONAL_LANGUAGES[0];
 
   const acceleratorName = systemHealth?.gpu || "Vector Accelerator";
-  const indexedCountFormatted = systemHealth?.indexed_passages?.toLocaleString() || "173,866";
+  const indexedCountFormatted = systemHealth?.indexed_passages?.toLocaleString() || "100,022";
 
   function handleCopyCode(code) {
     if (!code) return;
@@ -280,8 +280,8 @@ ${res.text.slice(0, 300)}...
             <span className="status-badge">
               <Database size={13} /> {indexedCountFormatted} {t("passages")}
             </span>
-            <span className="status-badge">
-              <Cpu size={13} /> {retrievalMode} (RRF)
+            <span className="status-badge" title="FixItAI Hybrid Ensemble: BM25Okapi + Scratch BERT Dense Embeddings with Reciprocal Rank Fusion (k=60)">
+              <Sparkles size={13} style={{ color: "#6366f1" }} /> FixItAI Hybrid (RRF)
             </span>
             <span className="status-badge">
               <Zap size={13} /> {acceleratorName}
@@ -478,13 +478,28 @@ ModuleNotFoundError: No module named 'fastapi'..."
 
             <div className="control-group">
               <label>{t("retrieval_scheme")}</label>
-              <select value={retrievalMode} onChange={(e) => setRetrievalMode(e.target.value)}>
-                <option value="Hybrid">Hybrid (BM25 + Dense RRF)</option>
-                <option value="Linear-Hybrid">Linear-Hybrid (Weighted Sum)</option>
-                <option value="Semantic">Semantic (Dense BERT Embeddings)</option>
-                <option value="BM25">BM25 (Probabilistic BM25Okapi)</option>
-                <option value="TF-IDF">TF-IDF (Sublinear N-Gram Vectorizer)</option>
-              </select>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  padding: "0 12px",
+                  borderRadius: "6px",
+                  background: "rgba(99, 102, 241, 0.08)",
+                  border: "1px solid rgba(99, 102, 241, 0.22)",
+                  color: "#4338ca",
+                  fontWeight: 600,
+                  fontSize: "12.5px",
+                  height: "38px",
+                  boxSizing: "border-box",
+                  cursor: "default",
+                  userSelect: "none"
+                }}
+                title="Single Best Model: FixItAI Hybrid (BM25Okapi + Scratch BERT RRF k=60)"
+              >
+                <Sparkles size={14} style={{ color: "#6366f1" }} />
+                <span>FixItAI Hybrid (BM25 + Scratch BERT RRF)</span>
+              </div>
             </div>
 
             <button
@@ -580,7 +595,7 @@ ModuleNotFoundError: No module named 'fastapi'..."
             </span>
           )}
 
-          <span>• Mode: <strong>{searchMetadata.retrieval_mode || retrievalMode}</strong></span>
+          <span>• Model: <strong>FixItAI Hybrid (BM25 + Scratch BERT RRF)</strong></span>
           <span>• Accelerator: <strong>{searchMetadata.device || systemHealth?.device}</strong></span>
         </div>
       )}
@@ -725,7 +740,7 @@ ModuleNotFoundError: No module named 'fastapi'..."
               </button>
 
               <button
-                className={`btn btn-sm ${showHindiView ? "btn-active" : "btn-secondary"}`}
+                className={`btn btn-sm ${showHindiView && targetLang !== "en" ? "btn-active" : "btn-secondary"}`}
                 onClick={toggleHindiTranslation}
                 disabled={isTranslating}
               >
@@ -733,9 +748,9 @@ ModuleNotFoundError: No module named 'fastapi'..."
                 <span>
                   {isTranslating
                     ? t("translating")
-                    : showHindiView
+                    : showHindiView && targetLang !== "en"
                     ? "View in English"
-                    : `${selectedLangMeta.label} View`}
+                    : `Translate to ${targetLang === "en" ? "Hindi (हिंदी)" : selectedLangMeta.label}`}
                 </span>
               </button>
             </div>

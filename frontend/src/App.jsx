@@ -121,9 +121,13 @@ function App() {
     setHasSearched(true);
     setSearchResults([]);
     setDiagnosticSolution(null);
-    setHindiSolution(null);
-    setShowHindiView(false);
     setSearchMetadata(null);
+
+    // Keep previous translation state if target language is already active
+    if (targetLang === "en") {
+      setHindiSolution(null);
+      setShowHindiView(false);
+    }
 
     try {
       const data = await apiRequest("/search", {
@@ -132,18 +136,27 @@ function App() {
         body: JSON.stringify({
           query: q,
           technology: selectedTech === "All technologies" ? "All" : selectedTech,
-          mode: retrievalMode,
+          mode: "Hybrid",
           top_k: 5,
           wizard_option: wizardOption || null,
+          target_lang: targetLang,
         }),
       });
       setSearchResults(data.results || []);
       setLinguisticAnalysis(data.analysis || null);
       setDiagnosticSolution(data.ai_solution || null);
+      if (data.translated_solution) {
+        setHindiSolution(data.translated_solution);
+        if (targetLang !== "en") {
+          setShowHindiView(true);
+        }
+      } else if (targetLang !== "en" && data.ai_solution) {
+        handleTranslateToLang(targetLang, data.parsed_trace?.clean_query || q, data.ai_solution);
+      }
       setSearchMetadata({
         latency_ms: data.latency_ms,
         device: data.device,
-        retrieval_mode: data.retrieval_mode,
+        retrieval_mode: "Hybrid",
         confidence: data.confidence,
         guardrail: data.guardrail,
         typo_correction: data.typo_correction,
@@ -151,6 +164,7 @@ function App() {
         perplexity: data.perplexity,
         wizard_questions: data.wizard_questions,
         indic_meta: data.indic_meta,
+        parsed_trace: data.parsed_trace,
       });
     } catch (err) {
       setSearchErrorMsg(err.message);
@@ -159,8 +173,9 @@ function App() {
     }
   }
 
-  async function handleTranslateToLang(langCode) {
-    if (!diagnosticSolution) return;
+  async function handleTranslateToLang(langCode, queryOverride = null, solutionOverride = null) {
+    const sol = solutionOverride || diagnosticSolution;
+    if (!sol) return;
     const reqLang = langCode || targetLang;
     if (reqLang === "en") {
       setShowHindiView(false);
@@ -168,15 +183,22 @@ function App() {
     }
     setIsTranslating(true);
     try {
+      const qText = queryOverride || searchMetadata?.parsed_trace?.clean_query || searchQuery;
+      let cleanQ = qText;
+      if (cleanQ.includes("\n")) {
+        const lines = cleanQ.trim().split("\n");
+        const excLine = lines.slice().reverse().find(l => l.includes("Error:") || l.includes("Exception:") || l.includes("Exception"));
+        cleanQ = excLine ? excLine.trim() : lines[lines.length - 1].trim();
+      }
       const data = await apiRequest("/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: searchQuery,
-          root_cause: diagnosticSolution.root_cause || "",
-          action_steps: diagnosticSolution.action_steps || [],
-          code_snippet: diagnosticSolution.code_snippet || "",
-          text: diagnosticSolution.root_cause || "",
+          query: cleanQ,
+          root_cause: sol.root_cause || "",
+          action_steps: sol.action_steps || [],
+          code_snippet: sol.code_snippet || "",
+          text: sol.root_cause || "",
           target_lang: reqLang,
         }),
       });
@@ -191,12 +213,16 @@ function App() {
 
   async function toggleHindiTranslation() {
     if (!diagnosticSolution) return;
+    if (showHindiView && targetLang !== "en") {
+      setShowHindiView(false);
+      return;
+    }
     const effectiveLang = targetLang === "en" ? "hi" : targetLang;
     if (targetLang === "en") {
       setTargetLang("hi");
     }
-    if (hindiSolution && hindiSolution.language_code === effectiveLang) {
-      setShowHindiView(!showHindiView);
+    if (hindiSolution && (hindiSolution.language_code === effectiveLang || hindiSolution.language === effectiveLang)) {
+      setShowHindiView(true);
       return;
     }
     await handleTranslateToLang(effectiveLang);

@@ -186,6 +186,7 @@ class HybridRetriever:
         self.vectorizer = TfidfVectorizer(
             ngram_range=(1, 2),
             sublinear_tf=True,
+            max_features=50000,
             token_pattern=r"(?u)\b[\w./:#-]+\b"
         )
         if texts:

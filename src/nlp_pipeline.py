@@ -453,79 +453,137 @@ class NLPPipeline:
         }
 
     def parse_stack_trace(self, raw_text: str) -> Dict[str, Any]:
-        """Strip timestamps, thread IDs, memory addresses, and isolate the active crash frame."""
+        """Strip terminal noise, shell prompts, timestamps, paths, and isolate the exact root cause technical error."""
         text = html.unescape(raw_text or "").strip()
         if not text:
-            return {"clean_query": "", "error_type": "", "isolated_frame": "", "sanitized_trace": ""}
+            return {"clean_query": "", "error_type": "", "isolated_frame": "", "sanitized_trace": "", "is_stack_trace": False}
 
         # 1. Strip ANSI escape color codes
         sanitized = re.sub(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", "", text)
 
         # 2. Strip timestamps and log levels
-        sanitized = re.sub(r"\b\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?\b", "", sanitized)
-        sanitized = re.sub(r"\b(?:DEBUG|INFO|WARN|WARNING|ERROR|FATAL|CRITICAL)\b\s*[:\-]?\s*", "", sanitized, flags=re.I)
+        sanitized = re.sub(r"\b\d{4}[-/]\d{2}[-/]\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?\b", "", sanitized)
+        sanitized = re.sub(r"\b(?:DEBUG|INFO|WARN|WARNING|NOTICE)\b\s*[:\-]?\s*", "", sanitized, flags=re.I)
 
-        # 3. Strip hex memory pointers e.g. 0x7fff5fbff8e0
-        sanitized = re.sub(r"0x[0-9a-fA-F]{6,16}", "<mem_ptr>", sanitized)
+        # 3. Strip shell prompt prefixes from lines (e.g., "user@host:~$ ", "(venv) macbook% ", "$ ", "> ")
+        cleaned_lines = []
+        extracted_command = ""
+        for raw_line in sanitized.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            cmd_match = re.search(r"^(?:(?:\([a-zA-Z0-9_.-]+\)\s*)?[a-zA-Z0-9_.-]+@[^%#$:]+[:\s][^%#$]*[%#$]\s*|\$\s*|>\s*)(.+)$", line)
+            if cmd_match:
+                cmd = cmd_match.group(1).strip()
+                if any(k in cmd.lower() for k in ["docker", "npm", "pip", "git", "python", "node", "cargo", "yarn", "pnpm", "make", "mvn"]):
+                    if not extracted_command:
+                        extracted_command = cmd
+                continue
+            cleaned_lines.append(line)
 
-        # 4. Strip thread tags e.g. [main], [Thread-1]
-        sanitized = re.sub(r"\[(?:Thread-\d+|main|asyncio_[\w-]+)\]", "", sanitized)
+        sanitized_trace = "\n".join(cleaned_lines)
 
-        # 5. Extract core error signature
         error_type = ""
         isolated_frame = ""
         clean_query = ""
 
-        # Case A: Python Traceback
-        py_trace = re.findall(r'File "([^"]+)", line (\d+), in (\w+)\s*\n\s*(.+)', sanitized)
-        py_err = re.search(r"\b([a-zA-Z0-9_.]*(?:Error|Exception)):\s*(.+)", sanitized)
-        if py_err:
-            error_type = py_err.group(1)
-            err_msg = py_err.group(2).strip()
+        # Case A: Python Traceback (scan from bottom up to find active crashing exception)
+        py_errs = list(re.finditer(r"\b([a-zA-Z0-9_.]*(?:Error|Exception))(?::\s*(.*))?$", sanitized_trace, re.M))
+        py_trace = re.findall(r'File "([^"]+)", line (\d+), in (\w+)(?:\s*\n\s*(.+))?', sanitized_trace)
+        if py_errs:
+            last_err = py_errs[-1]
+            error_type = last_err.group(1)
+            err_msg = (last_err.group(2) or "").strip()
             if py_trace:
-                last_frame = py_trace[-1]
-                isolated_frame = f'{Path(last_frame[0]).name}:{last_frame[1]} in {last_frame[2]}()'
-                clean_query = f"{error_type}: {err_msg} in {isolated_frame}"
-            else:
-                clean_query = f"{error_type}: {err_msg}"
+                user_frames = [f for f in py_trace if "site-packages" not in f[0] and "lib/python" not in f[0]]
+                chosen_frame = user_frames[-1] if user_frames else py_trace[-1]
+                isolated_frame = f"{Path(chosen_frame[0]).name}:{chosen_frame[1]} in {chosen_frame[2]}()"
+            
+            clean_err_msg = re.sub(r"(?:/[A-Za-z0-9_.-]+)+/([A-Za-z0-9_.-]+)", r"\1", err_msg)
+            clean_query = f"{error_type}: {clean_err_msg}".strip(" :")
 
-        # Case B: Java Stack Trace
-        java_err = re.search(r"\b([a-z0-9_.]+\.([A-Z]\w*(?:Exception|Error))):\s*(.*)", sanitized)
-        java_frame = re.search(r"\tat\s+([a-zA-Z0-9_.$]+\([A-Za-z0-9_]+\.java:\d+\))", sanitized)
-        if java_err and not clean_query:
-            error_type = java_err.group(2)
-            java_msg = java_err.group(3).strip()
-            if java_frame:
-                isolated_frame = java_frame.group(1)
-                clean_query = f"{error_type}: {java_msg} at {isolated_frame}"
-            else:
-                clean_query = f"{error_type}: {java_msg}"
-
-        # Case C: Node.js / JavaScript Error
-        node_err = re.search(r"\b([A-Z]\w*Error):\s*(.+)", sanitized)
-        node_frame = re.search(r"\bat\s+(?:async\s+)?([^\s()]+)\s+\(([^)]+):(\d+):(\d+)\)", sanitized)
-        if node_err and not clean_query:
-            error_type = node_err.group(1)
-            node_msg = node_err.group(2).strip()
-            if node_frame:
-                isolated_frame = f"{Path(node_frame.group(2)).name}:{node_frame.group(3)}"
-                clean_query = f"{error_type}: {node_msg} at {isolated_frame}"
-            else:
-                clean_query = f"{error_type}: {node_msg}"
-
-        # Fallback: Find any error regex
+        # Case B: Java Stack Trace (check 'Caused by:' first as it holds the true root cause)
         if not clean_query:
-            err_match = ERROR_REGEX.search(sanitized)
-            error_type = err_match.group(0) if err_match else "RuntimeError"
-            first_lines = [l.strip() for l in sanitized.splitlines() if l.strip()][:2]
-            clean_query = " ".join(first_lines)
+            caused_by = re.search(r"Caused by:\s*([a-zA-Z0-9_.]+\.([A-Z]\w*(?:Exception|Error))):\s*(.*)", sanitized_trace)
+            java_err = re.search(r"\b([a-zA-Z0-9_.]+\.([A-Z]\w*(?:Exception|Error))):\s*(.*)", sanitized_trace)
+            java_frame = re.search(r"\tat\s+([a-zA-Z0-9_.$]+\([A-Za-z0-9_]+\.java:\d+\))", sanitized_trace)
+            
+            target_err = caused_by or java_err
+            if target_err:
+                error_type = target_err.group(2)
+                java_msg = (target_err.group(3) or "").strip()
+                if java_frame:
+                    isolated_frame = java_frame.group(1)
+                clean_query = f"{error_type}: {java_msg}".strip(" :")
+
+        # Case C: Node.js / JavaScript / TypeScript Error
+        if not clean_query:
+            node_err = re.search(r"\b([A-Z]\w*Error):\s*(.+)", sanitized_trace)
+            node_frame = re.search(r"\bat\s+(?:async\s+)?([^\s()]+)\s+\(([^)]+):(\d+):(\d+)\)", sanitized_trace)
+            if node_err:
+                error_type = node_err.group(1)
+                node_msg = node_err.group(2).strip()
+                if node_frame:
+                    isolated_frame = f"{Path(node_frame.group(2)).name}:{node_frame.group(3)}"
+                clean_query = f"{error_type}: {node_msg}".strip(" :")
+
+        # Case D: Docker / Daemon / Container Errors
+        if not clean_query:
+            docker_match = re.search(r"(?:docker:\s*)?(?:Error response from daemon:\s*)?(.+?(?:bind:\s*address already in use|Ports are not available|listen tcp|connect: connection refused|no space left on device|cannot open file|no such container|image not found|manifest unknown).*)", sanitized_trace, re.I)
+            if docker_match:
+                error_type = "DockerDaemonError"
+                clean_query = f"Docker {docker_match.group(1).strip()}"
+
+        # Case E: Git Errors
+        if not clean_query:
+            git_match = re.search(r"(?:fatal|error):\s*(refusing to merge unrelated histories|failed to push some refs|Updates were rejected|cannot lock ref|remote origin already exists|merge conflict in .+)", sanitized_trace, re.I)
+            if git_match:
+                error_type = "GitFatalError"
+                clean_query = f"Git {git_match.group(0).strip()}"
+
+        # Case F: Compiler / Build Errors (C++, Go, Rust, GCC, Clang)
+        if not clean_query:
+            comp_match = re.search(r"(?:fatal error|error\[E\d+\]|undefined reference to|panic:)\s*[:]?\s*(.+)", sanitized_trace, re.I)
+            if comp_match:
+                error_type = "CompilationError"
+                clean_query = comp_match.group(0).strip()
+
+        # Case G: General Terminal Error Extraction (Filter high-signal failure lines)
+        if not clean_query:
+            error_indicator_regex = re.compile(
+                r"\b(?:error|fatal|failed|failure|exception|panic|denied|refused|cannot find|could not|not found|conflict|rejected)\b",
+                re.I
+            )
+            meaningful_err_lines = []
+            for line in cleaned_lines:
+                if re.match(r"^[-=_*#\s]{4,}$", line) or "===" in line or "---" in line:
+                    continue
+                if error_indicator_regex.search(line):
+                    sanitized_line = re.sub(r"(?:/[A-Za-z0-9_.-]+)+/([A-Za-z0-9_.-]+)", r"\1", line)
+                    sanitized_line = re.sub(r"(?:[A-Za-z]:\\[^:\n]+)\\([A-Za-z0-9_.-]+)", r"\1", sanitized_line)
+                    meaningful_err_lines.append(sanitized_line.strip())
+
+            if meaningful_err_lines:
+                error_type = "RuntimeError"
+                selected_err = " ".join(meaningful_err_lines[:2])
+                if extracted_command:
+                    clean_query = f"{extracted_command}: {selected_err}"
+                else:
+                    clean_query = selected_err
+            else:
+                valid_lines = [l for l in cleaned_lines if len(l) > 10 and not l.startswith(">>>")]
+                clean_query = " ".join(valid_lines[-2:] if len(valid_lines) >= 2 else valid_lines)
+
+        clean_query = re.sub(r"\s+", " ", clean_query).strip()
+        if len(clean_query) > 250:
+            clean_query = clean_query[:250].rsplit(" ", 1)[0]
 
         return {
-            "clean_query": clean_query.strip()[:300],
-            "error_type": error_type,
+            "clean_query": clean_query,
+            "error_type": error_type or "RuntimeError",
             "isolated_frame": isolated_frame,
-            "sanitized_trace": sanitized.strip(),
-            "is_stack_trace": bool(isolated_frame or error_type)
+            "sanitized_trace": sanitized_trace.strip(),
+            "is_stack_trace": bool(isolated_frame or error_type or "Error" in clean_query or "fatal" in clean_query.lower())
         }
 
     def generate_diagnostic_wizard(

@@ -60,9 +60,11 @@ class VectorEngine:
 
     def get_sbert_model(self):
         if self._sbert is None:
+            from .bert_encoder import get_device
+            dev = str(get_device())
             try:
                 from sentence_transformers import SentenceTransformer
-                self._sbert = SentenceTransformer("all-MiniLM-L6-v2")
+                self._sbert = SentenceTransformer("all-MiniLM-L6-v2", device=dev)
             except Exception:
                 self._sbert = None
         return self._sbert
